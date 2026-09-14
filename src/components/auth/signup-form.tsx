@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { COMPANY_EMAIL_DOMAIN, isCompanyEmail } from "@/lib/auth/company-email";
 
 export function SignupForm() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -50,15 +48,14 @@ export function SignupForm() {
       return;
     }
 
-    const result = await signIn("credentials", { email, password, redirect: false });
-    setPending(false);
+    const result = await signIn("credentials", { email, password, redirect: false, callbackUrl: "/dashboard" });
     if (!result?.ok) {
+      setPending(false);
       setError("Account created. Sign in from the login page.");
-      router.push("/login");
+      window.location.assign("/login");
       return;
     }
-    router.push("/dashboard");
-    router.refresh();
+    window.location.assign(result.url ?? "/dashboard");
   }
 
   return (

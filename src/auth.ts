@@ -10,7 +10,31 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
+/**
+ * On Vercel, a leftover localhost NEXTAUTH_URL makes Auth.js issue cookies that
+ * the browser won't keep on https://*.vercel.app — login briefly succeeds then
+ * requireUser() sends you back to /login.
+ */
+function resolveAuthUrl() {
+  const configured = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL;
+  const onVercel = Boolean(process.env.VERCEL);
+  const isLocal = !configured || /localhost|127\.0\.0\.1/i.test(configured);
+  if (onVercel && isLocal) {
+    const host = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+    if (host) {
+      const url = host.startsWith("http") ? host : `https://${host}`;
+      process.env.AUTH_URL = url;
+      process.env.NEXTAUTH_URL = url;
+      return url;
+    }
+  }
+  return configured;
+}
+
+resolveAuthUrl();
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   // Required on Vercel so Auth.js trusts the Host header for callbacks/cookies.
   trustHost: true,
   session: { strategy: "jwt" },
@@ -37,14 +61,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user?.id) {
+      if (user) {
+        token.sub = user.id;
         token.userId = user.id;
         token.role = user.role;
       }
       return token;
     },
     session({ session, token }) {
-      session.user.id = token.userId ?? token.sub ?? "";
+      const id = token.userId ?? token.sub ?? "";
+      session.user.id = id;
       session.user.role = token.role ?? "viewer";
       return session;
     },

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,25 +10,26 @@ import { Label } from "@/components/ui/label";
 import { COMPANY_EMAIL_DOMAIN } from "@/lib/auth/company-email";
 
 export function LoginForm() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
   async function submit(formData: FormData) {
     setPending(true);
     setError("");
+    // Full navigation after credentials sign-in so the session cookie is
+    // included on the next server render (soft client navigations can race).
     const result = await signIn("credentials", {
       email: String(formData.get("email") ?? ""),
       password: String(formData.get("password") ?? ""),
       redirect: false,
+      callbackUrl: "/dashboard",
     });
-    setPending(false);
     if (!result?.ok) {
+      setPending(false);
       setError(`The email or password is incorrect. Use your @${COMPANY_EMAIL_DOMAIN} account.`);
       return;
     }
-    router.push("/dashboard");
-    router.refresh();
+    window.location.assign(result.url ?? "/dashboard");
   }
 
   return (

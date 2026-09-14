@@ -19,6 +19,14 @@ let cachedEnv: z.infer<typeof envSchema> | undefined;
 
 export function getEnv() {
   if (!cachedEnv) {
+    // Prefer the real deployment URL over a localhost value copied into Vercel.
+    if (process.env.VERCEL) {
+      const configured = process.env.NEXTAUTH_URL ?? "";
+      if (!configured || /localhost|127\.0\.0\.1/i.test(configured)) {
+        const host = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+        if (host) process.env.NEXTAUTH_URL = host.startsWith("http") ? host : `https://${host}`;
+      }
+    }
     const parsed = envSchema.safeParse(process.env);
     if (!parsed.success) {
       throw new Error(`Invalid server environment: ${parsed.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
