@@ -4,10 +4,16 @@ import { createClient } from "@supabase/supabase-js";
 
 const scrypt = promisify(scryptCallback);
 
+const COMPANY_EMAIL_DOMAIN = "rebelmarketingcafe.com";
 const [email, password, role = "admin"] = process.argv.slice(2);
 
 if (!email || !password) {
   console.error('Usage: node --env-file=.env scripts/create-user.mjs <email> <password> [admin|viewer]');
+  process.exit(1);
+}
+
+if (!email.toLowerCase().endsWith(`@${COMPANY_EMAIL_DOMAIN}`)) {
+  console.error(`Email must be @${COMPANY_EMAIL_DOMAIN}`);
   process.exit(1);
 }
 

@@ -13,7 +13,8 @@ export async function hashPassword(password: string) {
   return `scrypt$${salt}$${derived.toString("hex")}`;
 }
 
-export async function verifyPassword(password: string, storedHash: string) {
+export async function verifyPassword(password: string, storedHash: string | null | undefined) {
+  if (!storedHash) return false;
   const [algorithm, salt, hash] = storedHash.split("$");
   if (algorithm !== "scrypt" || !salt || !hash) return false;
   try {

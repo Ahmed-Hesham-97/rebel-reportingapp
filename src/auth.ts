@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
+import { isCompanyEmail } from "@/lib/auth/company-email";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { verifyPassword } from "@/lib/security/passwords";
 
@@ -20,12 +21,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(rawCredentials) {
         const parsed = credentialsSchema.safeParse(rawCredentials);
         if (!parsed.success) return null;
+        const email = parsed.data.email.toLowerCase();
+        if (!isCompanyEmail(email)) return null;
         const { data: user, error } = await supabaseAdmin()
           .from("users")
           .select("id,email,hashed_password,role")
-          .eq("email", parsed.data.email.toLowerCase())
+          .eq("email", email)
           .maybeSingle();
-        if (error || !user || !(await verifyPassword(parsed.data.password, user.hashed_password))) return null;
+        if (error || !user?.hashed_password || !(await verifyPassword(parsed.data.password, user.hashed_password))) {
+          return null;
+        }
         return { id: user.id, email: user.email, role: user.role };
       },
     }),

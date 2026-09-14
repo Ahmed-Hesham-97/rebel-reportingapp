@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Email/password signup at `/signup` restricted to `@rebelmarketingcafe.com` addresses; first successful signup creates the app user.
 - Next.js App Router foundation with strict TypeScript, Tailwind CSS, and accessible UI primitives.
 - NextAuth credentials login with role-aware internal access.
 - Supabase migrations, RLS, encrypted client credentials, client CRUD, and audit logging.
