@@ -22,8 +22,9 @@ type ShopifyOrder = {
 };
 
 const SHOP_QUERY = `query StoreDetails { shop { name ianaTimezone currencyCode } }`;
-const ORDERS_QUERY = `query Orders($query: String!) {
-  orders(first: 250, query: $query, sortKey: CREATED_AT) {
+const ORDERS_QUERY = `query Orders($query: String!, $cursor: String) {
+  orders(first: 250, query: $query, sortKey: CREATED_AT, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
     nodes {
       createdAt
       totalPriceSet { shopMoney { amount currencyCode } }
@@ -72,13 +73,30 @@ export async function testShopifyConnection(storeUrl: string, token: string) {
   return { name: data.shop.name, timezone: data.shop.ianaTimezone, currency: data.shop.currencyCode };
 }
 
-function queryFor(start: string, end: string) {
-  return `created_at:>=${start.slice(0, 10)} created_at:<${end.slice(0, 10)}`;
+function queryFor(start: string, end: string, timezone: string) {
+  // Must use shop-calendar dates — ISO slice(0,10) shifts a day for UTC+ shops.
+  const since = formatInTimeZone(new Date(start), timezone, "yyyy-MM-dd");
+  const until = formatInTimeZone(new Date(end), timezone, "yyyy-MM-dd");
+  return `status:any created_at:>=${since} created_at:<${until}`;
 }
 
-async function periodMetrics(storeUrl: string, token: string, start: string, end: string) {
-  const response = await graphql<{ orders: { nodes: ShopifyOrder[] } }>(storeUrl, token, ORDERS_QUERY, { query: queryFor(start, end) });
-  const orders = response.orders.nodes;
+async function fetchOrders(storeUrl: string, token: string, start: string, end: string, timezone: string) {
+  const query = queryFor(start, end, timezone);
+  const nodes: ShopifyOrder[] = [];
+  let cursor: string | null = null;
+  type OrdersPage = { orders: { nodes: ShopifyOrder[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } };
+  // Cap pages so a huge store cannot blow the report timeout; 5×250 covers typical months.
+  for (let page = 0; page < 5; page++) {
+    const response: OrdersPage = await graphql<OrdersPage>(storeUrl, token, ORDERS_QUERY, { query, cursor });
+    nodes.push(...response.orders.nodes);
+    if (!response.orders.pageInfo.hasNextPage) break;
+    cursor = response.orders.pageInfo.endCursor;
+  }
+  return nodes;
+}
+
+async function periodMetrics(storeUrl: string, token: string, start: string, end: string, timezone: string) {
+  const orders = await fetchOrders(storeUrl, token, start, end, timezone);
   const products = new Map<string, ProductPerformance>();
   let revenue = 0;
   let currency = "USD";
@@ -190,7 +208,9 @@ const TRACKED_SUBJECTS = new Set(["PRODUCT", "PRODUCT_VARIANT", "COLLECTION", "P
 
 async function fetchStoreChanges(storeUrl: string, token: string, period: ReportPeriod): Promise<StoreChange[]> {
   try {
-    const query = `created_at:>=${period.current.start.slice(0, 10)} created_at:<${period.current.end.slice(0, 10)}`;
+    const since = formatInTimeZone(new Date(period.current.start), period.timezone, "yyyy-MM-dd");
+    const until = formatInTimeZone(new Date(period.current.end), period.timezone, "yyyy-MM-dd");
+    const query = `created_at:>=${since} created_at:<${until}`;
     const response = await graphql<{ events: { nodes: Array<{ id: string; action: string; createdAt: string; message: string; subjectType?: string }> } }>(
       storeUrl,
       token,
@@ -301,8 +321,8 @@ async function fetchDailyRevenue(
 export async function fetchShopifyMetrics(storeUrl: string, token: string, period: ReportPeriod): Promise<ShopifyMetrics> {
   // Core order metrics first. Funnel / events / theme / daily are best-effort and never block commerce data.
   const [current, previous] = await Promise.all([
-    periodMetrics(storeUrl, token, period.current.start, period.current.end),
-    periodMetrics(storeUrl, token, period.previous.start, period.previous.end),
+    periodMetrics(storeUrl, token, period.current.start, period.current.end, period.timezone),
+    periodMetrics(storeUrl, token, period.previous.start, period.previous.end, period.timezone),
   ]);
   const [funnel, storeChanges, theme, dailyRevenue] = await Promise.all([
     fetchFunnel(storeUrl, token, period),

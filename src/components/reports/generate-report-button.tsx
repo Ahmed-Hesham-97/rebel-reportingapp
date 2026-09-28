@@ -56,7 +56,7 @@ export function GenerateReportButton({ clientId }: { clientId: string }) {
         value={month}
         onChange={(event) => setMonth(event.target.value)}
         disabled={pending}
-        className="min-h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 disabled:opacity-50"
+        className="min-h-10 cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {months.map((option) => (
           <option key={option.value} value={option.value}>

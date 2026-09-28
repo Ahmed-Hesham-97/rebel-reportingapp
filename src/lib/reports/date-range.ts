@@ -5,7 +5,9 @@ import type { ReportPeriod } from "@/types/report";
 export type { ReportPeriod } from "@/types/report";
 
 function localDate(year: number, month: number, day: number, timezone: string) {
-  return fromZonedTime(new Date(Date.UTC(year, month, day)), timezone);
+  // Wall-clock Y/M/D in the shop timezone. Do not use Date.UTC — fromZonedTime
+  // reads the system's local getters and would bake in the server offset.
+  return fromZonedTime(new Date(year, month, day, 0, 0, 0, 0), timezone);
 }
 
 export function getPreviousMonthPeriod(now = new Date(), timezone = "UTC"): ReportPeriod {

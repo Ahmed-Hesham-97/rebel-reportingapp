@@ -18,13 +18,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav aria-label="Main navigation" className="flex gap-1 overflow-auto px-3 pb-4 md:block md:flex-1 md:space-y-1">
           <Link
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-stone-300 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-stone-300 transition-colors hover:bg-white/10 hover:text-white"
             href="/dashboard"
           >
             <BarChart3 size={17} /> Dashboard
           </Link>
           <Link
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-stone-300 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-stone-300 transition-colors hover:bg-white/10 hover:text-white"
             href="/clients/new"
           >
             <Building2 size={17} /> Add client

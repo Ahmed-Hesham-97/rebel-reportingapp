@@ -28,7 +28,7 @@ export function DeleteReportIconButton({ reportId, label }: { reportId: string; 
       onClick={onDelete}
       disabled={pending}
       aria-label={`Delete ${label} report`}
-      className="inline-flex size-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+      className="inline-flex size-9 cursor-pointer items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
     >
       <Trash2 size={16} />
     </button>

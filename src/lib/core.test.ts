@@ -30,6 +30,13 @@ describe("report periods", () => {
     expect(period.previous.start).toContain("2026-01");
   });
 
+  it("keeps shop-calendar month bounds for UTC+ shops", async () => {
+    const { formatInTimeZone } = await import("date-fns-tz");
+    const period = getReportMonthPeriod("2026-05-01", "Australia/Sydney");
+    expect(formatInTimeZone(new Date(period.current.start), "Australia/Sydney", "yyyy-MM-dd")).toBe("2026-05-01");
+    expect(formatInTimeZone(new Date(period.current.end), "Australia/Sydney", "yyyy-MM-dd")).toBe("2026-06-01");
+  });
+
   it("calculates percentage deltas safely", () => {
     expect(percentChange(120, 100)).toBe(20);
     expect(percentChange(1, 0)).toBe(100);
