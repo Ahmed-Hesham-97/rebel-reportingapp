@@ -13,21 +13,22 @@ import { normalizeSections, sectionsForSources } from "@/lib/reports/sections";
 import type { SourceName } from "@/types/report";
 
 function sourceErrorMessage(source: SourceName, error: unknown) {
+  const raw = error instanceof Error ? error.message : "request failed";
   if (error instanceof IntegrationError) {
     if (error.status === 401) {
       return source === "shopify"
-        ? "Shopify rejected the access token (401). Open Settings → Connect with Shopify again."
-        : `${source} rejected the API credentials (401). Update the key in Settings.`;
+        ? "Shopify rejected the access token (401). Open Settings → Connect with Shopify again (or paste a fresh Admin API token and Save)."
+        : `${source} rejected the API credentials (401). Paste a fresh key in Settings and Save.`;
     }
     if (error.status === 403) {
       return `${source} token is missing required scopes (403). Reconnect and approve all requested permissions.`;
     }
     if (error.status === 400) {
-      return `${source} rejected the request (400). Check the saved credentials in Settings.`;
+      return raw.includes(":") ? raw : `${source} rejected the request (400). Check the saved credentials in Settings.`;
     }
-    return `${source} request failed (${error.status})`;
+    return raw.includes(source) ? raw : `${source} request failed (${error.status})`;
   }
-  return `${source}: ${error instanceof Error ? error.message : "request failed"}`;
+  return `${source}: ${raw}`;
 }
 
 export async function generateReport(

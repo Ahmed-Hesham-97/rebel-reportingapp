@@ -13,7 +13,10 @@ const FLASH: Record<string, { tone: "ok" | "warn" | "err"; text: string }> = {
   shopify_hmac: { tone: "err", text: "Shopify rejected the callback signature. Check SHOPIFY_CLIENT_SECRET on Vercel." },
   shopify_shop: { tone: "err", text: "Shopify returned an invalid shop domain." },
   shopify_code: { tone: "err", text: "Shopify did not return an authorization code. Try connecting again." },
-  shopify_exchange: { tone: "err", text: "Could not exchange the Shopify code for a token. Try connecting again." },
+  shopify_exchange: {
+    tone: "err",
+    text: "Shopify connect failed (token exchange or save). Confirm SHOPIFY_CLIENT_ID / SHOPIFY_CLIENT_SECRET on Vercel match the Shopify app, then try Connect again.",
+  },
   shopify_state: { tone: "err", text: "The Shopify connection expired. Click Connect with Shopify again." },
 };
 
@@ -51,7 +54,21 @@ export default async function ClientSettingsPage({
     <h1 className="text-3xl font-bold tracking-tight">Client settings</h1><p className="mb-8 mt-2 text-slate-500">Update connection details for {client.name}. Existing secrets stay unchanged unless replaced.</p>
     {flash ? <div className={`mb-6 rounded-xl border px-4 py-3 text-sm ${flashClass}`}>{flash.text}</div> : null}
     <Card className="mb-6"><CardHeader><CardTitle>Connect the Shopify store</CardTitle><p className="text-sm text-slate-500">Installing the app in Shopify alone is not enough — click below to approve scopes and store a fresh Admin API token. Use this instead of pasting a token by hand.</p></CardHeader><CardContent className="flex flex-wrap items-center gap-3"><Button asChild><a href={`/api/shopify/install?clientId=${client.id}`}>Connect with Shopify</a></Button>{client.shopify_access_token ? <span className="text-xs text-slate-500">A token is saved — reconnect if reports fail with auth errors.</span> : <span className="text-xs font-medium text-amber-700">Not connected yet.</span>}</CardContent></Card>
-    <ClientForm clientId={client.id} initialValues={{ name: client.name, brandLogoUrl: client.brand_logo_url ?? "", shopifyStoreUrl: client.shopify_store_url, metaAdAccountId: client.meta_ad_account_id ?? "", reportRecipients: client.report_recipients.join(", ") }} />
+    <ClientForm
+      clientId={client.id}
+      initialValues={{
+        name: client.name,
+        brandLogoUrl: client.brand_logo_url ?? "",
+        shopifyStoreUrl: client.shopify_store_url,
+        metaAdAccountId: client.meta_ad_account_id ?? "",
+        reportRecipients: client.report_recipients.join(", "),
+      }}
+      initialHas={{
+        shopify: Boolean(client.shopify_access_token),
+        klaviyo: Boolean(client.klaviyo_api_key),
+        meta: Boolean(client.meta_access_token && client.meta_ad_account_id),
+      }}
+    />
     <div className="mt-6 grid gap-3 sm:grid-cols-3">
       <ConnectionTest clientId={client.id} source="shopify" />
       <ConnectionTest clientId={client.id} source="klaviyo" />

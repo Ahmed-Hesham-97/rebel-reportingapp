@@ -33,16 +33,35 @@ export async function POST(request: Request) {
   const parsed = clientSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Please check the client details.", issues: parsed.error.flatten() }, { status: 400 });
   const value = parsed.data;
-  const { data, error } = await supabaseAdmin().from("clients").insert({
-    name: value.name,
-    brand_logo_url: value.brandLogoUrl || null,
-    shopify_store_url: value.shopifyStoreUrl,
-    shopify_access_token: value.shopifyAccessToken ? encryptSecret(value.shopifyAccessToken) : null,
-    klaviyo_api_key: value.klaviyoApiKey ? encryptSecret(value.klaviyoApiKey) : null,
-    meta_access_token: value.metaAccessToken ? encryptSecret(value.metaAccessToken) : null,
-    meta_ad_account_id: value.metaAdAccountId || null,
-    report_recipients: value.reportRecipients,
-  }).select("id").single();
-  if (error) return NextResponse.json({ error: "Unable to create client." }, { status: 500 });
-  return NextResponse.json({ id: data.id }, { status: 201 });
+  const { data, error } = await supabaseAdmin()
+    .from("clients")
+    .insert({
+      name: value.name,
+      brand_logo_url: value.brandLogoUrl || null,
+      shopify_store_url: value.shopifyStoreUrl,
+      shopify_access_token: value.shopifyAccessToken?.trim() ? encryptSecret(value.shopifyAccessToken.trim()) : null,
+      klaviyo_api_key: value.klaviyoApiKey?.trim() ? encryptSecret(value.klaviyoApiKey.trim()) : null,
+      meta_access_token: value.metaAccessToken?.trim() ? encryptSecret(value.metaAccessToken.trim()) : null,
+      meta_ad_account_id: value.metaAdAccountId || null,
+      report_recipients: value.reportRecipients,
+    })
+    .select("id,shopify_access_token,klaviyo_api_key,meta_access_token,meta_ad_account_id")
+    .single();
+  if (error) return NextResponse.json({ error: `Unable to create client: ${error.message}` }, { status: 500 });
+  return NextResponse.json(
+    {
+      id: data.id,
+      savedSecrets: [
+        data.shopify_access_token ? "shopify" : null,
+        data.klaviyo_api_key ? "klaviyo" : null,
+        data.meta_access_token ? "meta" : null,
+      ].filter(Boolean),
+      has: {
+        shopify: Boolean(data.shopify_access_token),
+        klaviyo: Boolean(data.klaviyo_api_key),
+        meta: Boolean(data.meta_access_token && data.meta_ad_account_id),
+      },
+    },
+    { status: 201 },
+  );
 }
