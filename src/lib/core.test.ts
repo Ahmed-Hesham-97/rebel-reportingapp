@@ -32,7 +32,9 @@ describe("report periods", () => {
 
   it("calculates percentage deltas safely", () => {
     expect(percentChange(120, 100)).toBe(20);
-    expect(percentChange(1, 0)).toBeNull();
+    expect(percentChange(1, 0)).toBe(100);
+    expect(percentChange(0, 0)).toBe(0);
+    expect(percentChange(1, null)).toBeNull();
   });
 
   it("identifies a positive and negative headline movement", () => {

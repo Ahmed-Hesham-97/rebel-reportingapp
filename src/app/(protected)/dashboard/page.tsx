@@ -55,9 +55,9 @@ export default async function DashboardPage({
       {loadError ? <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{loadError}</div> : null}
       <header className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-semibold text-red-500">Overview</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Client reporting</h1>
-          <p className="mt-2 text-slate-500">Monitor your agency&apos;s ecommerce performance reports.</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--brand)]">Overview</p>
+          <h1 className="font-display mt-2 text-4xl font-bold tracking-tight text-[var(--ink)]">Client reporting</h1>
+          <p className="mt-2 text-[var(--muted)]">Monitor your agency&apos;s ecommerce performance reports.</p>
         </div>
         <Button asChild>
           <Link href="/clients/new">

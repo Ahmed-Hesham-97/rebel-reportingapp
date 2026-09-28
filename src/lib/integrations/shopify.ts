@@ -16,6 +16,7 @@ import type {
 } from "@/types/report";
 
 type ShopifyOrder = {
+  createdAt: string;
   totalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
   lineItems: { edges: Array<{ node: { quantity: number; originalTotalSet: { shopMoney: { amount: string } }; product: { id: string; title: string } | null } }> };
 };
@@ -24,6 +25,7 @@ const SHOP_QUERY = `query StoreDetails { shop { name ianaTimezone currencyCode }
 const ORDERS_QUERY = `query Orders($query: String!) {
   orders(first: 250, query: $query, sortKey: CREATED_AT) {
     nodes {
+      createdAt
       totalPriceSet { shopMoney { amount currencyCode } }
       lineItems(first: 100) {
         edges { node { quantity originalTotalSet { shopMoney { amount } } product { id title } } }
@@ -92,7 +94,14 @@ async function periodMetrics(storeUrl: string, token: string, start: string, end
       products.set(item.product.id, existing);
     }
   }
-  return { revenue, orders: orders.length, aov: orders.length ? revenue / orders.length : 0, currency, products: [...products.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5) };
+  return {
+    revenue,
+    orders: orders.length,
+    aov: orders.length ? revenue / orders.length : 0,
+    currency,
+    products: [...products.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5),
+    nodes: orders,
+  };
 }
 
 type QlTable = { columns: Array<{ name: string }>; rows: unknown[] } | null;
@@ -213,16 +222,93 @@ async function fetchThemeStatus(storeUrl: string, token: string): Promise<ThemeS
   }
 }
 
+function dayKey(iso: string, timezone: string) {
+  return formatInTimeZone(new Date(iso), timezone, "yyyy-MM-dd");
+}
+
+function dayOfMonth(isoDate: string) {
+  return Number(isoDate.slice(8, 10));
+}
+
+function aggregateOrdersByDay(orders: ShopifyOrder[], timezone: string) {
+  const totals = new Map<string, number>();
+  for (const order of orders) {
+    const key = dayKey(order.createdAt, timezone);
+    totals.set(key, (totals.get(key) ?? 0) + Number(order.totalPriceSet.shopMoney.amount));
+  }
+  return totals;
+}
+
+async function fetchDailySeries(storeUrl: string, token: string, range: string) {
+  const rows = await runShopifyql(
+    storeUrl,
+    token,
+    `FROM sales SHOW total_sales GROUP BY day ${range} ORDER BY day ASC`,
+  );
+  const totals = new Map<string, number>();
+  for (const row of rows) {
+    const day = row.day ?? row.Day ?? null;
+    if (!day) continue;
+    totals.set(day, number(row.total_sales) ?? 0);
+  }
+  return totals;
+}
+
+/**
+ * Builds a day-aligned current vs previous chart. Prefers ShopifyQL sales;
+ * falls back to order createdAt buckets when `read_reports` is missing.
+ */
+async function fetchDailyRevenue(
+  storeUrl: string,
+  token: string,
+  period: ReportPeriod,
+  currentOrders: ShopifyOrder[],
+  previousOrders: ShopifyOrder[],
+): Promise<Array<{ date: string; current: number; previous: number }>> {
+  let currentByDay: Map<string, number>;
+  let previousByDay: Map<string, number>;
+  try {
+    const currentRange = shopifyqlRange(period.current.start, period.current.end, period.timezone);
+    const previousRange = shopifyqlRange(period.previous.start, period.previous.end, period.timezone);
+    [currentByDay, previousByDay] = await Promise.all([
+      fetchDailySeries(storeUrl, token, currentRange),
+      fetchDailySeries(storeUrl, token, previousRange),
+    ]);
+  } catch (error) {
+    logger.warn({ err: error }, "shopify daily sales unavailable; falling back to order buckets");
+    currentByDay = aggregateOrdersByDay(currentOrders, period.timezone);
+    previousByDay = aggregateOrdersByDay(previousOrders, period.timezone);
+  }
+
+  const previousByDom = new Map<number, number>();
+  for (const [date, amount] of previousByDay) previousByDom.set(dayOfMonth(date), amount);
+
+  const currentDates = [...currentByDay.keys()].sort();
+  if (!currentDates.length) {
+    // Still emit previous-only days so an empty current month isn't a blank chart when we have history.
+    return [...previousByDay.keys()]
+      .sort()
+      .map((date) => ({ date, current: 0, previous: previousByDay.get(date) ?? 0 }));
+  }
+
+  return currentDates.map((date) => ({
+    date,
+    current: currentByDay.get(date) ?? 0,
+    previous: previousByDom.get(dayOfMonth(date)) ?? 0,
+  }));
+}
+
 export async function fetchShopifyMetrics(storeUrl: string, token: string, period: ReportPeriod): Promise<ShopifyMetrics> {
-  // Core order metrics first. Funnel / events / theme are best-effort and never block commerce data.
+  // Core order metrics first. Funnel / events / theme / daily are best-effort and never block commerce data.
   const [current, previous] = await Promise.all([
     periodMetrics(storeUrl, token, period.current.start, period.current.end),
     periodMetrics(storeUrl, token, period.previous.start, period.previous.end),
   ]);
-  const [funnel, storeChanges, theme] = await Promise.all([
+  const [funnel, storeChanges, theme, dailyRevenue] = await Promise.all([
     fetchFunnel(storeUrl, token, period),
     fetchStoreChanges(storeUrl, token, period),
     fetchThemeStatus(storeUrl, token),
+    fetchDailyRevenue(storeUrl, token, period, current.nodes, previous.nodes),
   ]);
   return {
     currency: current.currency,
@@ -234,7 +320,7 @@ export async function fetchShopifyMetrics(storeUrl: string, token: string, perio
     returningCustomers: metric(null, null),
     refundRate: metric(null, null),
     topProducts: current.products,
-    dailyRevenue: [],
+    dailyRevenue,
     funnel,
     storeChanges,
     theme,
