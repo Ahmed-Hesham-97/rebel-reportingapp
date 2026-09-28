@@ -12,15 +12,30 @@ import { getEnv, getShopifyAppCredentials } from "@/lib/env";
 export const SHOPIFY_SCOPES = ["read_orders", "read_products", "read_reports", "read_themes"] as const;
 
 const SHOP_DOMAIN = /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/;
+const ADMIN_STORE = /(?:https?:\/\/)?admin\.shopify\.com\/store\/([a-zA-Z0-9][a-zA-Z0-9-]*)/i;
+const BARE_HANDLE = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
 
 export function isValidShopDomain(shop: string | null): shop is string {
   return typeof shop === "string" && SHOP_DOMAIN.test(shop);
 }
 
-/** Accepts a full store URL or a bare domain and returns the myshopify hostname. */
+/**
+ * Accepts myshopify URLs, admin.shopify.com/store/{handle} links, or bare
+ * handles and returns the `{handle}.myshopify.com` hostname Admin API needs.
+ */
 export function toShopDomain(input: string) {
-  const trimmed = input.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  return trimmed.toLowerCase();
+  const trimmed = input.trim();
+  const admin = trimmed.match(ADMIN_STORE);
+  if (admin) return `${admin[1].toLowerCase()}.myshopify.com`;
+
+  const host = trimmed.replace(/^https?:\/\//i, "").split("/")[0]?.toLowerCase() ?? "";
+  if (SHOP_DOMAIN.test(host)) return host;
+  if (BARE_HANDLE.test(host)) return `${host}.myshopify.com`;
+  return host;
+}
+
+export function toShopifyStoreUrl(input: string) {
+  return `https://${toShopDomain(input)}`;
 }
 
 export function redirectUri() {

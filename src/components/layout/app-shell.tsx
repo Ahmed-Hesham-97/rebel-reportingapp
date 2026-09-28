@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { BarChart3, Building2, LogOut } from "lucide-react";
-import { signOut } from "@/auth";
-import { requireUser } from "@/lib/authz";
-import { Button } from "@/components/ui/button";
+import { BarChart3, Building2 } from "lucide-react";
+import { AUTH_DISABLED, requireUser } from "@/lib/authz";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -25,17 +23,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </nav>
         <div className="hidden border-t border-white/10 p-4 md:block">
-          <p className="truncate px-2 text-xs text-slate-400">{user.email}</p>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <Button type="submit" variant="ghost" className="mt-2 w-full justify-start text-slate-300 hover:bg-white/10 hover:text-white">
-              <LogOut size={16} /> Sign out
-            </Button>
-          </form>
+          <p className="truncate px-2 text-xs text-slate-400">
+            {AUTH_DISABLED ? "Auth disabled (temporary)" : user.email}
+          </p>
         </div>
       </aside>
       <main className="min-w-0 flex-1 md:ml-64">{children}</main>

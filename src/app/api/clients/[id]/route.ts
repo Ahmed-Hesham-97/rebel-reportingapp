@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getApiUser } from "@/lib/authz";
+import { isValidShopDomain, toShopDomain, toShopifyStoreUrl } from "@/lib/integrations/shopify-oauth";
 import { encryptSecret } from "@/lib/security/encryption";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+
+const shopifyStoreUrlSchema = z.string().trim().min(1).transform((value, ctx) => {
+  const domain = toShopDomain(value);
+  if (!isValidShopDomain(domain)) {
+    ctx.addIssue({ code: "custom", message: "Use a myshopify.com URL or an admin.shopify.com/store/… link." });
+    return z.NEVER;
+  }
+  return toShopifyStoreUrl(value);
+});
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).max(150),
   brandLogoUrl: z.string().url().optional().or(z.literal("")),
-  shopifyStoreUrl: z.string().url(),
+  shopifyStoreUrl: shopifyStoreUrlSchema,
   shopifyAccessToken: z.string().optional(),
   klaviyoApiKey: z.string().optional(),
   metaAccessToken: z.string().optional(),

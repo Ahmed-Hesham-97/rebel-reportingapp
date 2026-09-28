@@ -3,6 +3,7 @@ import "server-only";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { requestJson } from "@/lib/integrations/http";
+import { isValidShopDomain, toShopDomain } from "@/lib/integrations/shopify-oauth";
 import { logger } from "@/lib/logger";
 import { metric, type ReportPeriod } from "@/lib/reports/date-range";
 import type {
@@ -45,7 +46,10 @@ const EVENTS_QUERY = `query StoreChanges($query: String!) {
 const THEME_QUERY = `query LiveTheme { themes(first: 1, roles: [MAIN]) { nodes { name role updatedAt } } }`;
 
 function endpoint(storeUrl: string) {
-  const domain = new URL(storeUrl).hostname;
+  const domain = toShopDomain(storeUrl);
+  if (!isValidShopDomain(domain)) {
+    throw new Error(`Shopify store URL must resolve to a myshopify.com domain (got "${storeUrl}").`);
+  }
   return `https://${domain}/admin/api/2026-01/graphql.json`;
 }
 
@@ -210,9 +214,12 @@ async function fetchThemeStatus(storeUrl: string, token: string): Promise<ThemeS
 }
 
 export async function fetchShopifyMetrics(storeUrl: string, token: string, period: ReportPeriod): Promise<ShopifyMetrics> {
-  const [current, previous, funnel, storeChanges, theme] = await Promise.all([
+  // Core order metrics first. Funnel / events / theme are best-effort and never block commerce data.
+  const [current, previous] = await Promise.all([
     periodMetrics(storeUrl, token, period.current.start, period.current.end),
     periodMetrics(storeUrl, token, period.previous.start, period.previous.end),
+  ]);
+  const [funnel, storeChanges, theme] = await Promise.all([
     fetchFunnel(storeUrl, token, period),
     fetchStoreChanges(storeUrl, token, period),
     fetchThemeStatus(storeUrl, token),

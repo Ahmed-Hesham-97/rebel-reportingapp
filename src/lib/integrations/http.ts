@@ -14,7 +14,7 @@ export async function requestJson<T>(source: string, url: string, init: RequestI
     });
     const text = await response.text();
     logger.info({ source, endpoint: new URL(url).pathname, status: response.status, durationMs: Math.round(performance.now() - started), responseSize: text.length }, "integration request");
-    if (!response.ok) throw new IntegrationError(`${source} request failed`, response.status, text.length);
+    if (!response.ok) throw new IntegrationError(`${source} request failed (${response.status})`, response.status, text.length);
     try {
       return JSON.parse(text) as T;
     } catch {

@@ -43,6 +43,17 @@ describe("report periods", () => {
   });
 });
 
+describe("shopify store URL normalization", () => {
+  it("maps admin links and bare handles to myshopify.com", async () => {
+    const { toShopDomain, isValidShopDomain, toShopifyStoreUrl } = await import("@/lib/integrations/shopify-oauth");
+    expect(toShopDomain("https://admin.shopify.com/store/mollyandstitchus")).toBe("mollyandstitchus.myshopify.com");
+    expect(toShopDomain("https://mollyandstitchus.myshopify.com/admin")).toBe("mollyandstitchus.myshopify.com");
+    expect(toShopDomain("mollyandstitchus")).toBe("mollyandstitchus.myshopify.com");
+    expect(isValidShopDomain(toShopDomain("https://admin.shopify.com/store/mollyandstitchus"))).toBe(true);
+    expect(toShopifyStoreUrl("https://admin.shopify.com/store/mollyandstitchus")).toBe("https://mollyandstitchus.myshopify.com");
+  });
+});
+
 describe("report section selection", () => {
   it("treats missing or empty selections as the full report", () => {
     expect(normalizeSections(null)).toEqual(ALL_SECTION_IDS);
