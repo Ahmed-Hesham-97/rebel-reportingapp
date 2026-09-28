@@ -8,8 +8,27 @@ import { fetchMetaMetrics } from "@/lib/integrations/meta";
 import { getReportMonthPeriod, getReportRangePeriod } from "@/lib/reports/date-range";
 import { recordActivity } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { IntegrationError } from "@/lib/integrations/retry";
 import { normalizeSections, sectionsForSources } from "@/lib/reports/sections";
 import type { SourceName } from "@/types/report";
+
+function sourceErrorMessage(source: SourceName, error: unknown) {
+  if (error instanceof IntegrationError) {
+    if (error.status === 401) {
+      return source === "shopify"
+        ? "Shopify rejected the access token (401). Open Settings → Connect with Shopify again."
+        : `${source} rejected the API credentials (401). Update the key in Settings.`;
+    }
+    if (error.status === 403) {
+      return `${source} token is missing required scopes (403). Reconnect and approve all requested permissions.`;
+    }
+    if (error.status === 400) {
+      return `${source} rejected the request (400). Check the saved credentials in Settings.`;
+    }
+    return `${source} request failed (${error.status})`;
+  }
+  return `${source}: ${error instanceof Error ? error.message : "request failed"}`;
+}
 
 export async function generateReport(
   clientId: string,
@@ -67,7 +86,7 @@ export async function generateReport(
   try {
     values.shopify = await fetchShopifyMetrics(client.shopify_store_url, shopifyToken, period);
   } catch (error) {
-    errors.push(`shopify: ${error instanceof Error ? error.message : "request failed"}`);
+    errors.push(sourceErrorMessage("shopify", error));
     logger.error({ clientId, error }, "shopify report fetch failed");
   }
 
@@ -81,7 +100,7 @@ export async function generateReport(
     settled.forEach((result, index) => {
       const source = optional[index][0];
       if (result.status === "fulfilled") values[source] = result.value;
-      else errors.push(`${source}: ${result.reason instanceof Error ? result.reason.message : "request failed"}`);
+      else errors.push(sourceErrorMessage(source, result.reason));
     });
   }
 

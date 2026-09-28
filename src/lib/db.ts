@@ -18,9 +18,9 @@ export async function getClient(id: string) {
  */
 export async function getClientSecrets(client: ClientRow) {
   return {
-    shopifyToken: client.shopify_access_token ? decryptSecret(client.shopify_access_token) : null,
-    klaviyoApiKey: client.klaviyo_api_key ? decryptSecret(client.klaviyo_api_key) : null,
-    metaAccessToken: client.meta_access_token ? decryptSecret(client.meta_access_token) : null,
+    shopifyToken: client.shopify_access_token ? decryptSecret(client.shopify_access_token).trim() : null,
+    klaviyoApiKey: client.klaviyo_api_key ? decryptSecret(client.klaviyo_api_key).trim() : null,
+    metaAccessToken: client.meta_access_token ? decryptSecret(client.meta_access_token).trim() : null,
   };
 }
 

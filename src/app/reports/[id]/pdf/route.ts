@@ -18,8 +18,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!row) return NextResponse.json({ error: "Report not found." }, { status: 404 });
   const { data: client } = await supabaseAdmin().from("clients").select("name,brand_logo_url").eq("id", row.client_id).maybeSingle();
   if (!client) return NextResponse.json({ error: "Client not found." }, { status: 404 });
-  // A preview renders whatever sections the reviewer currently has checked and
-  // never uploads or emails anything; delivery is an explicit, separate action.
+  // Preview/download renders the selected sections as a PDF. No email is sent.
   const requested = new URL(request.url).searchParams.get("sections");
   const sections = normalizeSections(requested ? requested.split(",") : row.included_sections);
   try {

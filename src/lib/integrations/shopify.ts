@@ -59,7 +59,10 @@ function endpoint(storeUrl: string) {
 async function graphql<T>(storeUrl: string, token: string, query: string, variables?: Record<string, unknown>) {
   const response = await requestJson<ShopifyGraphQLResponse<T>>("shopify", endpoint(storeUrl), {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": token.trim(),
+    },
     body: JSON.stringify({ query, variables }),
   });
   if (response.errors?.length) throw new Error(response.errors[0].message);
