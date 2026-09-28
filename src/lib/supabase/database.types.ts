@@ -33,17 +33,17 @@ export type Database = {
       };
       report_snapshots: {
         Row: {
-          id: string; client_id: string; report_month: string; shopify_data: Json | null; klaviyo_data: Json | null;
+          id: string; client_id: string; report_month: string; period_end: string; shopify_data: Json | null; klaviyo_data: Json | null;
           meta_data: Json | null; pdf_url: string | null; status: ReportStatus; error_log: string | null; created_at: string;
           included_sections: string[]; delivered_at: string | null;
         };
         Insert: {
-          id?: string; client_id: string; report_month: string; shopify_data?: Json | null; klaviyo_data?: Json | null;
+          id?: string; client_id: string; report_month: string; period_end: string; shopify_data?: Json | null; klaviyo_data?: Json | null;
           meta_data?: Json | null; pdf_url?: string | null; status?: ReportStatus; error_log?: string | null; created_at?: string;
           included_sections?: string[]; delivered_at?: string | null;
         };
         Update: Partial<{
-          shopify_data: Json | null; klaviyo_data: Json | null; meta_data: Json | null; pdf_url: string | null;
+          period_end: string; shopify_data: Json | null; klaviyo_data: Json | null; meta_data: Json | null; pdf_url: string | null;
           status: ReportStatus; error_log: string | null; included_sections: string[]; delivered_at: string | null;
         }>;
         Relationships: [];

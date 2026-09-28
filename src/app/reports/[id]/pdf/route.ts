@@ -25,7 +25,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const snapshot = { ...toReportSnapshot(row), includedSections: sections };
     const buffer = await renderToBuffer(createElement(ReportDocument, { snapshot, clientName: client.name, logoUrl: client.brand_logo_url }) as never);
-    return new NextResponse(new Uint8Array(buffer), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${client.name.replace(/[^a-z0-9]+/gi, "-")}-${row.report_month}.pdf"` } });
+    const disposition = new URL(request.url).searchParams.get("download") === "1" ? "attachment" : "inline";
+    return new NextResponse(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `${disposition}; filename="${client.name.replace(/[^a-z0-9]+/gi, "-")}-${row.report_month}.pdf"`,
+      },
+    });
   } catch {
     return NextResponse.json({ error: "Unable to render PDF." }, { status: 500 });
   }

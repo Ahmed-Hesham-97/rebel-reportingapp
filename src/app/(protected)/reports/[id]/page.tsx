@@ -11,6 +11,7 @@ import { RevenueChart } from "@/components/reports/revenue-chart";
 import { SectionPicker } from "@/components/reports/section-picker";
 import { DeleteReportButton } from "@/components/reports/delete-report-button";
 import { normalizeSections, sectionsForSources } from "@/lib/reports/sections";
+import { formatReportPeriodLabel } from "@/lib/reports/date-range";
 
 type SourceData = {
   revenue?: DeltaMetric;
@@ -27,7 +28,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const { data: report } = await supabaseAdmin()
     .from("report_snapshots")
-    .select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,pdf_url,status,error_log,included_sections,delivered_at")
+    .select("id,client_id,report_month,period_end,shopify_data,klaviyo_data,meta_data,pdf_url,status,error_log,included_sections,delivered_at")
     .eq("id", id)
     .maybeSingle();
   if (!report) notFound();
@@ -45,9 +46,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const shopify = (report.shopify_data ?? {}) as SourceData;
   const klaviyo = (report.klaviyo_data ?? {}) as SourceData;
   const meta = (report.meta_data ?? {}) as SourceData;
-  const label = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
-    new Date(`${report.report_month}T12:00:00Z`),
-  );
+  const label = formatReportPeriodLabel(report.report_month, report.period_end);
   const connectedNames = [
     sources.shopify ? "Shopify" : null,
     sources.klaviyo ? "Klaviyo" : null,
@@ -70,9 +69,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <h1 className="font-display mt-2 text-4xl font-bold tracking-tight text-[var(--ink)]">{label}</h1>
             <p className="mt-2 text-sm text-[var(--muted)]">
               {client?.name ? `${client.name} · ` : ""}
-              {report.delivered_at
-                ? `Sent to the client on ${new Date(report.delivered_at).toLocaleDateString("en-US")}.`
-                : "Not sent yet. Review the data below, then choose what the client sees."}
+              Review the data below, then download a PDF with the sections you want.
             </p>
           </div>
           <StatusBadge status={report.status} />
@@ -138,10 +135,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Build the client PDF</CardTitle>
+            <CardTitle>Download PDF</CardTitle>
             <p className="text-sm text-[var(--muted)]">
-              Everything above stays internal. Tick the sections to include, preview the result, then send it. Your choice becomes this
-              client&apos;s default for next month.
+              Tick the sections to include, then download. Your selection becomes this client&apos;s default for the next report.
             </p>
           </CardHeader>
           <CardContent>
@@ -149,8 +145,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               reportId={id}
               initialSections={normalizeSections(report.included_sections).filter((section) => available.includes(section))}
               availableSections={available}
-              deliveredAt={report.delivered_at}
-              canDeliver={user.role === "admin"}
             />
           </CardContent>
         </Card>

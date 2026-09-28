@@ -26,8 +26,18 @@ describe("report periods", () => {
   it("creates an inclusive calendar month window in a named timezone", () => {
     const period = getReportMonthPeriod("2026-02-01", "America/New_York");
     expect(period.reportMonth).toBe("2026-02-01");
+    expect(period.periodEnd).toBe("2026-03-01");
     expect(period.current.start).toContain("2026-02");
     expect(period.previous.start).toContain("2026-01");
+  });
+
+  it("builds quarter-length comparison windows", async () => {
+    const { getReportRangePeriod } = await import("@/lib/reports/date-range");
+    const period = getReportRangePeriod("2026-04-01", "2026-07-01", "UTC");
+    expect(period.reportMonth).toBe("2026-04-01");
+    expect(period.periodEnd).toBe("2026-07-01");
+    expect(new Date(period.previous.end).toISOString()).toBe(period.current.start);
+    expect(new Date(period.previous.start) < new Date(period.previous.end)).toBe(true);
   });
 
   it("keeps shop-calendar month bounds for UTC+ shops", async () => {

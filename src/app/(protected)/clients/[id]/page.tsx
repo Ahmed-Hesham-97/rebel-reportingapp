@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { LivePanel } from "@/components/clients/live-panel";
 import { GenerateReportButton } from "@/components/reports/generate-report-button";
 import { DeleteReportIconButton } from "@/components/reports/delete-report-icon-button";
+import { formatReportPeriodLabel } from "@/lib/reports/date-range";
 
 export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -18,7 +19,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   if (!client) notFound();
   const { data: snapshots } = await supabaseAdmin()
     .from("report_snapshots")
-    .select("id,report_month,status,created_at,error_log")
+    .select("id,report_month,period_end,status,created_at,error_log")
     .eq("client_id", id)
     .order("report_month", { ascending: false });
 
@@ -47,22 +48,8 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
             ) : null}
           </div>
         </header>
-        <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <div className="grid gap-6">
           <LivePanel clientId={id} />
-          <Card>
-            <CardHeader>
-              <CardTitle>Report recipients</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm text-slate-600">
-                {client.report_recipients.length ? (
-                  client.report_recipients.map((email) => <p key={email}>{email}</p>)
-                ) : (
-                  <p>No recipients configured.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
         <Card className="mt-6">
           <CardHeader>
@@ -72,15 +59,11 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
             {snapshots?.length ? (
               <div className="divide-y divide-[var(--border)]">
                 {snapshots.map((snapshot) => {
-                  const label = new Intl.DateTimeFormat("en-US", {
-                    month: "long",
-                    year: "numeric",
-                    timeZone: "UTC",
-                  }).format(new Date(`${snapshot.report_month}T12:00:00Z`));
+                  const label = formatReportPeriodLabel(snapshot.report_month, snapshot.period_end);
                   return (
                     <div key={snapshot.id} className="flex items-center gap-2 p-3 sm:p-2 sm:pr-3">
                       <Link
-                        className="flex min-w-0 flex-1 items-center justify-between gap-4 rounded-xl px-2 py-3 hover:bg-[var(--surface-muted)]"
+                        className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-4 rounded-xl px-2 py-3 hover:bg-[var(--surface-muted)]"
                         href={`/reports/${snapshot.id}`}
                       >
                         <div className="min-w-0">

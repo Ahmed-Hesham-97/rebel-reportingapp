@@ -5,13 +5,18 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { testShopifyConnection, fetchShopifyMetrics } from "@/lib/integrations/shopify";
 import { fetchKlaviyoMetrics } from "@/lib/integrations/klaviyo";
 import { fetchMetaMetrics } from "@/lib/integrations/meta";
-import { getReportMonthPeriod } from "@/lib/reports/date-range";
+import { getReportMonthPeriod, getReportRangePeriod } from "@/lib/reports/date-range";
 import { recordActivity } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 import { normalizeSections, sectionsForSources } from "@/lib/reports/sections";
 import type { SourceName } from "@/types/report";
 
-export async function generateReport(clientId: string, requestedMonth: string, userId?: string | null) {
+export async function generateReport(
+  clientId: string,
+  requestedMonth: string,
+  userId?: string | null,
+  periodEnd?: string | null,
+) {
   const client = await getClient(clientId);
   if (!client) throw new Error("Client not found");
   const secrets = await getClientSecrets(client);
@@ -20,23 +25,40 @@ export async function generateReport(clientId: string, requestedMonth: string, u
   const sources = configuredSources(client);
   const available = sectionsForSources(sources);
   const defaultSections = normalizeSections(client.default_sections).filter((id) => available.includes(id));
-  const existing = await supabaseAdmin().from("report_snapshots").select("id").eq("client_id", clientId).eq("report_month", requestedMonth).maybeSingle();
-  const { data: snapshot, error: createError } = await supabaseAdmin().from("report_snapshots").upsert({
-    id: existing.data?.id,
-    client_id: clientId,
-    report_month: requestedMonth,
-    status: "processing",
-    error_log: null,
-    included_sections: defaultSections,
-    delivered_at: null,
-  }, { onConflict: "client_id,report_month" }).select("id").single();
-  if (createError || !snapshot) throw new Error("Unable to start report");
 
   const connection = await testShopifyConnection(client.shopify_store_url, shopifyToken).catch((error) => {
     logger.warn({ clientId, error: error instanceof Error ? error.message : "unknown" }, "shopify timezone lookup failed");
     return { timezone: "UTC", currency: "USD" };
   });
-  const period = getReportMonthPeriod(requestedMonth, connection.timezone);
+  const period = periodEnd
+    ? getReportRangePeriod(requestedMonth, periodEnd, connection.timezone)
+    : getReportMonthPeriod(requestedMonth, connection.timezone);
+
+  const existing = await supabaseAdmin()
+    .from("report_snapshots")
+    .select("id")
+    .eq("client_id", clientId)
+    .eq("report_month", period.reportMonth)
+    .eq("period_end", period.periodEnd)
+    .maybeSingle();
+  const { data: snapshot, error: createError } = await supabaseAdmin()
+    .from("report_snapshots")
+    .upsert(
+      {
+        id: existing.data?.id,
+        client_id: clientId,
+        report_month: period.reportMonth,
+        period_end: period.periodEnd,
+        status: "processing",
+        error_log: null,
+        included_sections: defaultSections,
+        delivered_at: null,
+      },
+      { onConflict: "client_id,report_month,period_end" },
+    )
+    .select("id")
+    .single();
+  if (createError || !snapshot) throw new Error("Unable to start report");
 
   const errors: string[] = [];
   const values: Record<SourceName, unknown | null> = { shopify: null, klaviyo: null, meta: null };
@@ -64,14 +86,21 @@ export async function generateReport(clientId: string, requestedMonth: string, u
   }
 
   const status = errors.length === 0 ? "completed" : values.shopify || values.klaviyo || values.meta ? "partial" : "failed";
-  const { error: updateError } = await supabaseAdmin().from("report_snapshots").update({
-    shopify_data: values.shopify as never,
-    klaviyo_data: values.klaviyo as never,
-    meta_data: values.meta as never,
-    status,
-    error_log: errors.length ? errors.join("\n") : null,
-  }).eq("id", snapshot.id);
+  const { error: updateError } = await supabaseAdmin()
+    .from("report_snapshots")
+    .update({
+      shopify_data: values.shopify as never,
+      klaviyo_data: values.klaviyo as never,
+      meta_data: values.meta as never,
+      status,
+      error_log: errors.length ? errors.join("\n") : null,
+    })
+    .eq("id", snapshot.id);
   if (updateError) throw new Error("Unable to save report");
-  await recordActivity("report.generated", { userId, clientId, metadata: { reportMonth: requestedMonth, status } });
-  return { id: snapshot.id, status, errors };
+  await recordActivity("report.generated", {
+    userId,
+    clientId,
+    metadata: { reportMonth: period.reportMonth, periodEnd: period.periodEnd, status },
+  });
+  return { id: snapshot.id, status, errors, reportMonth: period.reportMonth, periodEnd: period.periodEnd };
 }

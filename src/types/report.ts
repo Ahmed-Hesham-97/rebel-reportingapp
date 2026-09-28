@@ -16,6 +16,8 @@ export type SourceResult<T> = {
 
 export type ReportPeriod = {
   reportMonth: string;
+  /** Exclusive end date (YYYY-MM-DD) of the reporting window. */
+  periodEnd: string;
   current: { start: string; end: string };
   previous: { start: string; end: string };
   timezone: string;
