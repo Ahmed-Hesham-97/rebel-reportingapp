@@ -42,8 +42,55 @@ export function redirectUri() {
   return new URL("/api/shopify/callback", getEnv().NEXTAUTH_URL).toString();
 }
 
-export function createOauthState() {
-  return randomBytes(16).toString("hex");
+type OauthStatePayload = { clientId: string; nonce: string; exp: number };
+
+function stateSecret() {
+  return getEnv().NEXTAUTH_SECRET;
+}
+
+function signPayload(payload: string) {
+  return createHmac("sha256", stateSecret()).update(payload).digest("base64url");
+}
+
+function safeEqual(a: string, b: string) {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
+/**
+ * Cookie-free OAuth state. Cookies often vanish on the Shopify → Vercel hop
+ * (host alias / SameSite), which surfaced as `?error=shopify_state`. The
+ * signed payload carries the client id so the callback does not need them.
+ */
+export function createOauthState(clientId: string) {
+  const payload = Buffer.from(
+    JSON.stringify({
+      clientId,
+      nonce: randomBytes(16).toString("hex"),
+      exp: Date.now() + 10 * 60 * 1000,
+    } satisfies OauthStatePayload),
+  ).toString("base64url");
+  return `${payload}.${signPayload(payload)}`;
+}
+
+export function parseOauthState(state: string | null): OauthStatePayload | null {
+  if (!state) return null;
+  const dot = state.indexOf(".");
+  if (dot <= 0) return null;
+  const payload = state.slice(0, dot);
+  const signature = state.slice(dot + 1);
+  if (!payload || !signature || !safeEqual(signature, signPayload(payload))) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as OauthStatePayload;
+    if (typeof parsed.clientId !== "string" || typeof parsed.nonce !== "string" || typeof parsed.exp !== "number") {
+      return null;
+    }
+    if (parsed.exp < Date.now()) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 export function authorizationUrl(shop: string, state: string) {

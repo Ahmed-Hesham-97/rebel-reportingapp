@@ -54,6 +54,16 @@ describe("shopify store URL normalization", () => {
   });
 });
 
+describe("shopify oauth state", () => {
+  it("round trips client id without cookies and rejects tampering", async () => {
+    const { createOauthState, parseOauthState } = await import("@/lib/integrations/shopify-oauth");
+    const state = createOauthState("client-123");
+    expect(parseOauthState(state)?.clientId).toBe("client-123");
+    expect(parseOauthState(`${state}x`)).toBeNull();
+    expect(parseOauthState(null)).toBeNull();
+  });
+});
+
 describe("report section selection", () => {
   it("treats missing or empty selections as the full report", () => {
     expect(normalizeSections(null)).toEqual(ALL_SECTION_IDS);

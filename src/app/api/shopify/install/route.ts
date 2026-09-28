@@ -6,9 +6,9 @@ import { authorizationUrl, createOauthState, isValidShopDomain, toShopDomain } f
 export const runtime = "nodejs";
 
 /**
- * Starts the OAuth handshake for a client's store. The client id travels in a
- * cookie alongside the state nonce so the callback knows which record to fill
- * without trusting anything Shopify echoes back.
+ * Starts the OAuth handshake for a client's store. Client id is embedded in a
+ * signed `state` so the callback can finish without relying on browser cookies
+ * surviving the Shopify redirect.
  */
 export async function GET(request: Request) {
   const user = await getApiUser();
@@ -27,12 +27,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const state = createOauthState();
-    const response = NextResponse.redirect(authorizationUrl(shop, state));
-    const cookie = { httpOnly: true, secure: url.protocol === "https:", sameSite: "lax" as const, path: "/", maxAge: 600 };
-    response.cookies.set("shopify_oauth_state", state, cookie);
-    response.cookies.set("shopify_oauth_client", clientId, cookie);
-    return response;
+    const state = createOauthState(clientId);
+    return NextResponse.redirect(authorizationUrl(shop, state));
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to start the install." }, { status: 500 });
   }
