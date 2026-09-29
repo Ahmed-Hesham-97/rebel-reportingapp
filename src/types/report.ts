@@ -83,10 +83,14 @@ export type MetaMetrics = {
   ctr: DeltaMetric;
   purchases: DeltaMetric;
   purchaseValue: DeltaMetric;
+  /** Purchases ÷ clicks × 100 when clicks are available. */
+  conversionRate: DeltaMetric;
   topCampaigns: CampaignPerformance[];
   topAdSets: CampaignPerformance[];
   byPlatform: Array<{ platform: "facebook" | "instagram"; spend: number; purchases: number; purchaseValue: number }>;
 };
+
+export type { ManualReportData } from "@/lib/reports/manual-data";
 
 export type ReportSnapshot = {
   id: string;
@@ -97,6 +101,7 @@ export type ReportSnapshot = {
   shopify: SourceResult<ShopifyMetrics>;
   klaviyo: SourceResult<KlaviyoMetrics>;
   meta: SourceResult<MetaMetrics>;
+  manual: import("@/lib/reports/manual-data").ManualReportData;
   executiveSummary: string[];
   pdfUrl: string | null;
   createdAt: string;

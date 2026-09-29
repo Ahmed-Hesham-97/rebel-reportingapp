@@ -9,7 +9,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const { data, error } = await supabaseAdmin()
     .from("report_snapshots")
-    .select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,pdf_url,status,error_log,created_at")
+    .select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,manual_data,pdf_url,status,error_log,created_at,included_sections")
     .eq("id", id)
     .maybeSingle();
   if (error) return NextResponse.json({ error: "Unable to load report." }, { status: 500 });
@@ -21,11 +21,44 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     shopify: data.shopify_data,
     klaviyo: data.klaviyo_data,
     meta: data.meta_data,
+    manual: data.manual_data,
     pdfUrl: data.pdf_url,
     status: data.status,
     errorLog: data.error_log,
     createdAt: data.created_at,
+    includedSections: data.included_sections,
   });
+}
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getApiUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id } = await params;
+  const body = await request.json().catch(() => null);
+  const { manualReportDataSchema } = await import("@/lib/reports/manual-data");
+  const parsed = manualReportDataSchema.safeParse(body?.manual ?? body);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid manual report fields." }, { status: 400 });
+
+  const { data: existing, error: lookupError } = await supabaseAdmin()
+    .from("report_snapshots")
+    .select("id,client_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (lookupError) return NextResponse.json({ error: "Unable to load report." }, { status: 500 });
+  if (!existing) return NextResponse.json({ error: "Report not found." }, { status: 404 });
+
+  const { error } = await supabaseAdmin()
+    .from("report_snapshots")
+    .update({ manual_data: parsed.data })
+    .eq("id", id);
+  if (error) return NextResponse.json({ error: "Unable to save manual fields." }, { status: 500 });
+
+  await recordActivity("report.manual_saved", {
+    userId: user.id,
+    clientId: existing.client_id,
+    metadata: { reportId: id },
+  });
+  return NextResponse.json({ ok: true, manual: parsed.data });
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {

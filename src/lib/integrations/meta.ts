@@ -39,10 +39,12 @@ function action(insight: MetaInsight, type: string, values = false) {
 function normalize(insight: MetaInsight) {
   const purchaseValue = action(insight, "purchase", true);
   const purchases = action(insight, "purchase");
+  const clicks = Number(insight.clicks ?? 0);
   return {
     spend: Number(insight.spend ?? 0), roas: Number(insight.purchase_roas?.[0]?.value ?? 0),
     cpm: Number(insight.cpm ?? 0), cpc: Number(insight.cpc ?? 0), ctr: Number(insight.ctr ?? 0),
     purchases, purchaseValue,
+    conversionRate: clicks > 0 ? (purchases / clicks) * 100 : 0,
   };
 }
 
@@ -61,6 +63,7 @@ export async function fetchMetaMetrics(accessToken: string, adAccountId: string,
     spend: metric(currentValues.spend, previousValues.spend), roas: metric(currentValues.roas, previousValues.roas),
     cpm: metric(currentValues.cpm, previousValues.cpm), cpc: metric(currentValues.cpc, previousValues.cpc), ctr: metric(currentValues.ctr, previousValues.ctr),
     purchases: metric(currentValues.purchases, previousValues.purchases), purchaseValue: metric(currentValues.purchaseValue, previousValues.purchaseValue),
+    conversionRate: metric(currentValues.conversionRate, previousValues.conversionRate),
     topCampaigns: campaigns.map((item) => ({ id: item.campaign_id ?? "unknown", name: item.campaign_name ?? "Untitled campaign", revenue: action(item, "purchase", true), roas: Number(item.purchase_roas?.[0]?.value ?? 0), conversions: action(item, "purchase") })).sort((a, b) => (b.roas ?? 0) - (a.roas ?? 0)).slice(0, 3),
     topAdSets: adSets.map((item) => ({ id: item.adset_id ?? "unknown", name: item.adset_name ?? "Untitled ad set", revenue: action(item, "purchase", true), conversions: action(item, "purchase") })).sort((a, b) => (b.conversions ?? 0) - (a.conversions ?? 0)).slice(0, 3),
     byPlatform: platforms.map((item) => ({ platform: item.publisher_platform === "instagram" ? "instagram" as const : "facebook" as const, spend: Number(item.spend ?? 0), purchases: action(item, "purchase"), purchaseValue: action(item, "purchase", true) })),

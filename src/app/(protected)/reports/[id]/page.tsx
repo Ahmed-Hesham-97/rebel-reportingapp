@@ -3,13 +3,15 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, TrendingDown, TrendingUp } from "lucide-react";
 import { requireUser } from "@/lib/authz";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { DeltaMetric } from "@/types/report";
+import type { DeltaMetric, ShopifyMetrics } from "@/types/report";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/utils";
 import { RevenueChart } from "@/components/reports/revenue-chart";
 import { SectionPicker } from "@/components/reports/section-picker";
 import { DeleteReportButton } from "@/components/reports/delete-report-button";
+import { ManualReportForm } from "@/components/reports/manual-report-form";
+import { normalizeManualData } from "@/lib/reports/manual-data";
 import { normalizeSections, sectionsForSources } from "@/lib/reports/sections";
 import { formatReportPeriodLabel } from "@/lib/reports/date-range";
 
@@ -21,6 +23,10 @@ type SourceData = {
   orders?: DeltaMetric;
   aov?: DeltaMetric;
   dailyRevenue?: Array<{ date: string; current: number; previous: number }>;
+  funnel?: ShopifyMetrics["funnel"];
+  newCustomers?: DeltaMetric;
+  returningCustomers?: DeltaMetric;
+  refundRate?: DeltaMetric;
 };
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +34,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const { data: report } = await supabaseAdmin()
     .from("report_snapshots")
-    .select("id,client_id,report_month,period_end,shopify_data,klaviyo_data,meta_data,pdf_url,status,error_log,included_sections,delivered_at")
+    .select("id,client_id,report_month,period_end,shopify_data,klaviyo_data,meta_data,manual_data,pdf_url,status,error_log,included_sections,delivered_at")
     .eq("id", id)
     .maybeSingle();
   if (!report) notFound();
@@ -46,12 +52,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const shopify = (report.shopify_data ?? {}) as SourceData;
   const klaviyo = (report.klaviyo_data ?? {}) as SourceData;
   const meta = (report.meta_data ?? {}) as SourceData;
+  const manual = normalizeManualData(report.manual_data);
   const label = formatReportPeriodLabel(report.report_month, report.period_end);
   const connectedNames = [
     sources.shopify ? "Shopify" : null,
     sources.klaviyo ? "Klaviyo" : null,
     sources.meta ? "Meta Ads" : null,
   ].filter(Boolean);
+  const funnel = shopify.funnel;
 
   return (
     <div className="p-6 lg:p-10">
@@ -69,7 +77,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <h1 className="font-display mt-2 text-4xl font-bold tracking-tight text-[var(--ink)]">{label}</h1>
             <p className="mt-2 text-sm text-[var(--muted)]">
               {client?.name ? `${client.name} · ` : ""}
-              Review the data below, then download a PDF with the sections you want.
+              Shopify data is pulled automatically. Fill in the manual sections below, then download the PDF.
             </p>
           </div>
           <StatusBadge status={report.status} />
@@ -84,30 +92,11 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
         <Card className="mb-6 overflow-hidden">
           <CardHeader className="bg-[linear-gradient(135deg,rgba(225,29,72,0.08),transparent_55%)]">
-            <CardTitle>Executive summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3 text-sm text-slate-600">
-              <li>
-                Report generated for {label}
-                {connectedNames.length ? ` using ${connectedNames.join(", ")}.` : "."}
-              </li>
-              <li>Use the month-over-month cards below to identify the strongest movement.</li>
-              <li>
-                {!sources.klaviyo || !sources.meta
-                  ? "Connect Klaviyo and Meta in client settings to fill the empty channel cards."
-                  : report.status === "partial"
-                    ? "Review the source warning before sharing this report with the client."
-                    : "All configured sources returned successfully."}
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Shopify revenue trend</CardTitle>
-            <p className="text-sm text-[var(--muted)]">Daily store revenue for {label}, with the prior month overlaid.</p>
+            <CardTitle>Pulled from Shopify</CardTitle>
+            <p className="text-sm text-[var(--muted)]">
+              Website metrics for {label}
+              {connectedNames.length ? ` · also connected: ${connectedNames.filter((n) => n !== "Shopify").join(", ") || "Shopify only"}` : ""}.
+            </p>
           </CardHeader>
           <CardContent>
             <RevenueChart data={shopify.dailyRevenue ?? []} />
@@ -115,7 +104,15 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         </Card>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <MetricCard source="Shopify revenue" metric={shopify.revenue} currency />
+          <MetricCard source="Revenue" metric={shopify.revenue} currency />
+          <MetricCard source="Orders" metric={shopify.orders} />
+          <MetricCard source="Average order value" metric={shopify.aov} currency />
+          <MetricCard source="Sessions" metric={funnel?.sessions} />
+          <MetricCard source="Conversion rate" metric={funnel?.conversionRate} percent />
+          <MetricCard source="Bounce rate" metric={funnel?.bounceRate} percent />
+          <MetricCard source="New customers" metric={shopify.newCustomers} />
+          <MetricCard source="Returning customers" metric={shopify.returningCustomers} />
+          <MetricCard source="Refund rate" metric={shopify.refundRate} percent />
           <MetricCard
             source="Email revenue"
             metric={klaviyo.emailRevenue}
@@ -123,8 +120,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             emptyHint={sources.klaviyo ? undefined : "Klaviyo not connected"}
           />
           <MetricCard source="Meta ROAS" metric={meta.roas} emptyHint={sources.meta ? undefined : "Meta not connected"} />
-          <MetricCard source="Shopify orders" metric={shopify.orders} />
-          <MetricCard source="Shopify AOV" metric={shopify.aov} currency />
           <MetricCard
             source="Meta ad spend"
             metric={meta.spend}
@@ -135,9 +130,22 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
         <Card className="mt-6">
           <CardHeader>
+            <CardTitle>Manual report fields</CardTitle>
+            <p className="text-sm text-[var(--muted)]">
+              Everything in the Rebel monthly template that Shopify (and connected Meta / Klaviyo) cannot supply.
+              Save before downloading the PDF.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ManualReportForm reportId={id} initial={manual} />
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
             <CardTitle>Download PDF</CardTitle>
             <p className="text-sm text-[var(--muted)]">
-              Tick the sections to include, then download. Your selection becomes this client&apos;s default for the next report.
+              Combines pulled Shopify / Meta / Klaviyo data with the manual fields above. Your section selection becomes this client&apos;s default.
             </p>
           </CardHeader>
           <CardContent>
@@ -181,19 +189,25 @@ function MetricCard({
   source,
   metric,
   currency = false,
+  percent = false,
   emptyHint,
 }: {
   source: string;
   metric?: DeltaMetric;
   currency?: boolean;
+  percent?: boolean;
   emptyHint?: string;
 }) {
   const current = metric?.current;
   const previous = metric?.previous;
   const change = metric?.changePct;
   const positive = typeof change === "number" && change >= 0;
-  const value =
-    currency ? formatCurrency(current) : current === null || current === undefined ? "—" : formatNumber(current);
+  let value = "—";
+  if (current !== null && current !== undefined) {
+    if (currency) value = formatCurrency(current);
+    else if (percent) value = `${current.toFixed(1)}%`;
+    else value = formatNumber(current);
+  }
 
   let comparison = "No comparison available";
   if (typeof change === "number") {
@@ -201,7 +215,9 @@ function MetricCard({
   } else if (typeof previous === "number" && previous === 0 && typeof current === "number" && current > 0) {
     comparison = "New vs $0 last month";
   } else if (typeof previous === "number") {
-    comparison = currency ? `vs ${formatCurrency(previous)} last month` : `vs ${formatNumber(previous)} last month`;
+    if (currency) comparison = `vs ${formatCurrency(previous)} last month`;
+    else if (percent) comparison = `vs ${previous.toFixed(1)}% last month`;
+    else comparison = `vs ${formatNumber(previous)} last month`;
   } else if (emptyHint) {
     comparison = emptyHint;
   }

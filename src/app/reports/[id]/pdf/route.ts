@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const user = await getApiUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  const { data: row, error } = await supabaseAdmin().from("report_snapshots").select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,pdf_url,status,error_log,created_at,included_sections,delivered_at").eq("id", id).maybeSingle();
+  const { data: row, error } = await supabaseAdmin().from("report_snapshots").select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,manual_data,pdf_url,status,error_log,created_at,included_sections,delivered_at").eq("id", id).maybeSingle();
   if (error) return NextResponse.json({ error: "Unable to load report." }, { status: 500 });
   if (!row) return NextResponse.json({ error: "Report not found." }, { status: 404 });
   const { data: client } = await supabaseAdmin().from("clients").select("name,brand_logo_url").eq("id", row.client_id).maybeSingle();

@@ -11,7 +11,7 @@ export async function renderAndStoreReport(snapshotId: string) {
   const db = supabaseAdmin();
   const { data: row } = await db
     .from("report_snapshots")
-    .select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,pdf_url,status,error_log,created_at,included_sections,delivered_at")
+    .select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,manual_data,pdf_url,status,error_log,created_at,included_sections,delivered_at")
     .eq("id", snapshotId)
     .single();
   if (!row) throw new Error("Report not found");

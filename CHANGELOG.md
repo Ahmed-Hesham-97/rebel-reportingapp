@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Manual report fields on the review page for everything in the Rebel monthly template that APIs cannot supply (social organic, Google Ads, website notes, influencer/UGC, content, Google Business, summary). Saved to `report_snapshots.manual_data` and merged into the PDF.
+- PDF sections aligned to the Rebel Marketing Monthly Report template: Social, Paid Media, Website, Email & SMS, Influencer & UGC, Content Creation, Google Business, Summary.
+- Shopify new/returning customer counts and refund rate from order + customer data.
+- Meta Ads conversion rate (purchases ÷ clicks) for the Paid Media table.
 - Email/password signup at `/signup` restricted to `@rebelmarketingcafe.com` addresses; first successful signup creates the app user.
 - Next.js App Router foundation with strict TypeScript, Tailwind CSS, and accessible UI primitives.
 - NextAuth credentials login with role-aware internal access.
@@ -21,8 +25,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Report PDF and section picker follow the agency template structure instead of source-only pages; legacy section ids (`shopify`, `klaviyo`, `meta`, …) map onto the new ones.
+- Shopify OAuth again requests `read_customers` so new/returning customer metrics can populate the Website section.
 - Report generation and the monthly cron no longer email clients automatically; delivery is an explicit admin action.
-- Dropped the unused `customer` field from the Shopify orders query, removing the `read_customers` scope and its protected customer data requirement.
 - Klaviyo and Meta credentials are optional, so a client can be onboarded with Shopify alone. Unconnected sources are skipped during generation instead of being reported as failures, and their sections are hidden from the picker.
 - The PDF route now previews without uploading or overwriting the stored file, and section numbering was removed so omitted sections don't leave gaps.
 

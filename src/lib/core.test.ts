@@ -89,7 +89,7 @@ describe("report section selection", () => {
     expect(normalizeSections([])).toEqual(ALL_SECTION_IDS);
   });
 
-  it("drops unknown ids and restores the canonical page order", () => {
-    expect(normalizeSections(["meta", "not-a-section", "shopify"])).toEqual(["shopify", "meta"]);
+  it("maps legacy section ids onto the template sections", () => {
+    expect(normalizeSections(["meta", "not-a-section", "shopify"])).toEqual(["paid-media", "website"]);
   });
 });

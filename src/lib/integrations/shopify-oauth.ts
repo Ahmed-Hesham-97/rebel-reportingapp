@@ -5,11 +5,12 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { getEnv, getShopifyAppCredentials } from "@/lib/env";
 
 /**
- * Scopes the report needs. read_reports powers the storefront funnel and
- * read_themes the live theme status; both are optional to the merchant but
- * requested together so a single install covers the whole report.
+ * Scopes the report needs. read_customers powers new/returning counts,
+ * read_reports the storefront funnel, and read_themes the live theme status.
+ * Funnel/theme are optional to the merchant but requested together so a single
+ * install covers the whole report.
  */
-export const SHOPIFY_SCOPES = ["read_orders", "read_products", "read_reports", "read_themes"] as const;
+export const SHOPIFY_SCOPES = ["read_orders", "read_customers", "read_products", "read_reports", "read_themes"] as const;
 
 const SHOP_DOMAIN = /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/;
 const ADMIN_STORE = /(?:https?:\/\/)?admin\.shopify\.com\/store\/([a-zA-Z0-9][a-zA-Z0-9-]*)/i;

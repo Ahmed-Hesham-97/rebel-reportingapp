@@ -17,7 +17,10 @@ import type {
 
 type ShopifyOrder = {
   createdAt: string;
+  displayFinancialStatus?: string | null;
   totalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
+  totalRefundedSet?: { shopMoney: { amount: string } } | null;
+  customer?: { id: string; numberOfOrders: number; createdAt: string } | null;
   lineItems: { edges: Array<{ node: { quantity: number; originalTotalSet: { shopMoney: { amount: string } }; product: { id: string; title: string } | null } }> };
 };
 
@@ -27,7 +30,10 @@ const ORDERS_QUERY = `query Orders($query: String!, $cursor: String) {
     pageInfo { hasNextPage endCursor }
     nodes {
       createdAt
+      displayFinancialStatus
       totalPriceSet { shopMoney { amount currencyCode } }
+      totalRefundedSet { shopMoney { amount } }
+      customer { id numberOfOrders createdAt }
       lineItems(first: 100) {
         edges { node { quantity originalTotalSet { shopMoney { amount } } product { id title } } }
       }
@@ -98,14 +104,32 @@ async function fetchOrders(storeUrl: string, token: string, start: string, end: 
   return nodes;
 }
 
+function isNewCustomer(order: ShopifyOrder, periodStart: string) {
+  const customer = order.customer;
+  if (!customer) return false;
+  if (customer.numberOfOrders <= 1) return true;
+  return new Date(customer.createdAt).getTime() >= new Date(periodStart).getTime();
+}
+
 async function periodMetrics(storeUrl: string, token: string, start: string, end: string, timezone: string) {
   const orders = await fetchOrders(storeUrl, token, start, end, timezone);
   const products = new Map<string, ProductPerformance>();
+  const customerIds = new Set<string>();
   let revenue = 0;
+  let refunded = 0;
+  let newCustomers = 0;
+  let returningCustomers = 0;
   let currency = "USD";
   for (const order of orders) {
     revenue += Number(order.totalPriceSet.shopMoney.amount);
+    refunded += Number(order.totalRefundedSet?.shopMoney.amount ?? 0);
     currency = order.totalPriceSet.shopMoney.currencyCode;
+    const customerId = order.customer?.id;
+    if (customerId && !customerIds.has(customerId)) {
+      customerIds.add(customerId);
+      if (isNewCustomer(order, start)) newCustomers += 1;
+      else returningCustomers += 1;
+    }
     for (const edge of order.lineItems.edges) {
       const item = edge.node;
       if (!item.product) continue;
@@ -119,6 +143,9 @@ async function periodMetrics(storeUrl: string, token: string, start: string, end
     revenue,
     orders: orders.length,
     aov: orders.length ? revenue / orders.length : 0,
+    refundRate: revenue > 0 ? (refunded / revenue) * 100 : 0,
+    newCustomers,
+    returningCustomers,
     currency,
     products: [...products.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 5),
     nodes: orders,
@@ -339,9 +366,9 @@ export async function fetchShopifyMetrics(storeUrl: string, token: string, perio
     orders: metric(current.orders, previous.orders),
     aov: metric(current.aov, previous.aov),
     conversionRate: funnel?.conversionRate ?? null,
-    newCustomers: metric(null, null),
-    returningCustomers: metric(null, null),
-    refundRate: metric(null, null),
+    newCustomers: metric(current.newCustomers, previous.newCustomers),
+    returningCustomers: metric(current.returningCustomers, previous.returningCustomers),
+    refundRate: metric(current.refundRate, previous.refundRate),
     topProducts: current.products,
     dailyRevenue,
     funnel,
