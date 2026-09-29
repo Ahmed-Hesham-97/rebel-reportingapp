@@ -9,6 +9,8 @@ const socialSchema = z.object({
   stories: str(),
   communityManagement: str(),
   topContent: str(),
+  /** Public URL of a pasted/uploaded screenshot for top performing content. */
+  topContentImage: str(),
   highlights: str(),
   reach: str(),
   reachPrev: str(),

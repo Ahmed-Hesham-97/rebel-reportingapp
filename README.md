@@ -7,7 +7,7 @@ Rebel Reports is an internal reporting workspace for Rebel Marketing. It combine
 1. Install Node.js 22 LTS (the current dependency set does not support Node 23).
 2. Run `npm install`.
 3. Copy `.env.example` to `.env.local` and fill in every server-only value.
-4. Apply the migrations in `supabase/migrations/` in numeric order, from `001_initial_schema.sql` through `007_manual_report_data.sql`.
+4. Apply the migrations in `supabase/migrations/` in numeric order, from `001_initial_schema.sql` through `008_report_assets_bucket.sql`.
 5. Create an account at `/signup` with a `@rebelmarketingcafe.com` email (or seed one with `npm run create-user -- you@rebelmarketingcafe.com '<password>' admin`).
 6. Run `npm run dev`.
 

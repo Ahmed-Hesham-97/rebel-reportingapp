@@ -5,6 +5,7 @@ import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImagePasteField } from "@/components/reports/image-paste-field";
 import { normalizeManualData, type ManualReportData } from "@/lib/reports/manual-data";
 
 type Props = {
@@ -12,7 +13,7 @@ type Props = {
   initial: ManualReportData;
 };
 
-type Field = { key: string; label: string; multiline?: boolean };
+type Field = { key: string; label: string; multiline?: boolean; image?: boolean };
 type Section = { title: string; hint: string; path: keyof ManualReportData; fields: Field[] };
 
 const SECTIONS: Section[] = [
@@ -26,7 +27,8 @@ const SECTIONS: Section[] = [
       { key: "reels", label: "Reels / short-form videos" },
       { key: "stories", label: "Stories published" },
       { key: "communityManagement", label: "Community management (DMs / comments)", multiline: true },
-      { key: "topContent", label: "Top performing content", multiline: true },
+      { key: "topContent", label: "Top performing content (caption)", multiline: true },
+      { key: "topContentImage", label: "Top performing content (image)", image: true },
       { key: "highlights", label: "Highlights & wins", multiline: true },
       { key: "reach", label: "Reach (current)" },
       { key: "reachPrev", label: "Reach (previous)" },
@@ -153,6 +155,26 @@ export function ManualReportForm({ reportId, initial }: Props) {
     setMessage("");
   }
 
+  async function updateAndPersist(path: keyof ManualReportData, key: string, value: string) {
+    const next = {
+      ...data,
+      [path]: { ...data[path], [key]: value },
+    } as ManualReportData;
+    setData(next);
+    setMessage("");
+    const response = await fetch(`/api/reports/${reportId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ manual: next }),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setMessage(body.error ?? "Image uploaded but could not be saved to the report.");
+      return;
+    }
+    setMessage(value ? "Image saved to the report." : "Image removed.");
+  }
+
   async function save() {
     setPending(true);
     setMessage("");
@@ -183,11 +205,17 @@ export function ManualReportForm({ reportId, initial }: Props) {
               const onChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
                 update(section.path, field.key, event.target.value);
               return (
-                <div key={field.key} className={field.multiline ? "sm:col-span-2" : undefined}>
+                <div key={field.key} className={field.multiline || field.image ? "sm:col-span-2" : undefined}>
                   <Label htmlFor={`${section.path}-${field.key}`} className="mb-1.5 block text-xs text-[var(--muted)]">
                     {field.label}
                   </Label>
-                  {field.multiline ? (
+                  {field.image ? (
+                    <ImagePasteField
+                      reportId={reportId}
+                      value={value}
+                      onChange={(url) => void updateAndPersist(section.path, field.key, url)}
+                    />
+                  ) : field.multiline ? (
                     <textarea
                       id={`${section.path}-${field.key}`}
                       value={value}

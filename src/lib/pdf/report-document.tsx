@@ -199,6 +199,11 @@ export function ReportDocument({
           <ActivityLine label="Stories published" value={manual.social.stories} />
           <ActivityLine label="Community management (DMs / comments)" value={manual.social.communityManagement} />
           <ActivityLine label="Top performing content" value={manual.social.topContent} />
+          {manual.social.topContentImage.trim() ? (
+            <View style={{ marginTop: 8, marginBottom: 4 }}>
+              <Image src={manual.social.topContentImage.trim()} style={{ width: 280, maxHeight: 360 }} />
+            </View>
+          ) : null}
           <ActivityLine label="Highlights & wins" value={manual.social.highlights} />
           <Text style={styles.subheading}>Performance</Text>
           <MetricTable
