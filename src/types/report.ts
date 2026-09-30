@@ -57,6 +57,15 @@ export type ShopifyMetrics = {
   theme: ThemeStatus | null;
 };
 
+/** Narrative Activity rows filled by the team before delivery; API seeds what it can. */
+export type KlaviyoActivity = {
+  campaignsSent: string | null;
+  flowsSummary: string | null;
+  listGrowthActivity: string | null;
+  abTestsRun: string | null;
+  highlights: string | null;
+};
+
 export type KlaviyoMetrics = {
   currency: string;
   emailRevenue: DeltaMetric;
@@ -71,6 +80,10 @@ export type KlaviyoMetrics = {
   topCampaigns: CampaignPerformance[];
   newSubscribers: DeltaMetric;
   unsubscribes: DeltaMetric;
+  unsubscribeRate: DeltaMetric;
+  campaignRevenue: DeltaMetric;
+  listGrowth: DeltaMetric;
+  activity: KlaviyoActivity;
   sms: { enabled: boolean; sent: DeltaMetric; clicked: DeltaMetric; revenue: DeltaMetric };
 };
 

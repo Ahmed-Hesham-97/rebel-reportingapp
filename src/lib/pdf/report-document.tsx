@@ -339,9 +339,9 @@ export function ReportDocument({
                 { label: "Open rate", metric: klaviyo.openRate, percent: true },
                 { label: "Click rate", metric: klaviyo.clickRate, percent: true },
                 { label: "Conversion rate", metric: klaviyo.conversionRate, percent: true },
-                { label: "Campaign revenue", metric: klaviyo.emailRevenue, currency: klaviyo.currency },
-                { label: "List growth", metric: klaviyo.newSubscribers },
-                { label: "Unsubscribe rate", metric: klaviyo.unsubscribes, percent: true },
+                { label: "Campaign revenue", metric: klaviyo.campaignRevenue ?? klaviyo.emailRevenue, currency: klaviyo.currency },
+                { label: "List growth", metric: klaviyo.listGrowth ?? klaviyo.newSubscribers },
+                { label: "Unsubscribe rate", metric: klaviyo.unsubscribeRate, percent: true },
               ])}
             />
           ) : (

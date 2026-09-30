@@ -11,8 +11,9 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   CRON_SECRET: z.string().min(16),
   // Only needed to connect stores over OAuth; absent until the Dev Dashboard app exists.
-  SHOPIFY_CLIENT_ID: z.string().min(1).optional(),
-  SHOPIFY_CLIENT_SECRET: z.string().min(1).optional(),
+  // Empty strings from .env.local count as unset (Zod optional only skips undefined).
+  SHOPIFY_CLIENT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(1).optional()),
+  SHOPIFY_CLIENT_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(1).optional()),
 });
 
 let cachedEnv: z.infer<typeof envSchema> | undefined;
