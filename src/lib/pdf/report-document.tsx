@@ -223,6 +223,7 @@ export function ReportDocument({
           <MetricTable
             rows={manualRows([
               { label: "Reach", current: manual.social.reach, previous: manual.social.reachPrev },
+              { label: "Interactions", current: manual.social.interactions, previous: manual.social.interactionsPrev },
               { label: "Impressions", current: manual.social.impressions, previous: manual.social.impressionsPrev },
               { label: "Engagement rate", current: manual.social.engagementRate, previous: manual.social.engagementRatePrev },
               { label: "Follower growth", current: manual.social.followerGrowth, previous: manual.social.followerGrowthPrev },

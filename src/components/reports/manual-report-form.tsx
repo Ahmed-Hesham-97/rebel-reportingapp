@@ -32,6 +32,8 @@ const SECTIONS: Section[] = [
       { key: "highlights", label: "Highlights & wins", multiline: true },
       { key: "reach", label: "Reach (current)" },
       { key: "reachPrev", label: "Reach (previous)" },
+      { key: "interactions", label: "Interactions (current)" },
+      { key: "interactionsPrev", label: "Interactions (previous)" },
       { key: "impressions", label: "Impressions (current)" },
       { key: "impressionsPrev", label: "Impressions (previous)" },
       { key: "engagementRate", label: "Engagement rate (current)" },

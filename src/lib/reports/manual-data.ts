@@ -23,6 +23,8 @@ const socialObjectSchema = z.object({
   highlights: str(),
   reach: str(),
   reachPrev: str(),
+  interactions: str(),
+  interactionsPrev: str(),
   impressions: str(),
   impressionsPrev: str(),
   engagementRate: str(),
