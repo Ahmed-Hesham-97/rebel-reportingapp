@@ -182,7 +182,7 @@ export function ReportDocument({
     <Document title={`${clientName} monthly report`} author="Rebel Marketing">
       <Page size="A4" style={styles.cover}>
         {logoUrl ? <Image src={logoUrl} style={{ width: 110, marginBottom: 28 }} /> : null}
-        <Text style={styles.brandMark}>Rebel ● Marketing</Text>
+        <Text style={styles.brandMark}>Rebel Marketing</Text>
         <Text style={styles.coverTitle}>Monthly Performance Report</Text>
         <View style={styles.coverMeta}>
           <Text>Client · {clientName}</Text>
@@ -439,7 +439,7 @@ export function ReportDocument({
           ) : null}
           <View style={{ marginTop: 28 }}>
             <Text style={styles.body}>As always, reach out anytime. We&apos;re here.</Text>
-            <Text style={[styles.brandMark, { marginTop: 20, marginBottom: 4 }]}>Rebel ● Marketing</Text>
+            <Text style={[styles.brandMark, { marginTop: 20, marginBottom: 4 }]}>Rebel Marketing</Text>
             <Text style={styles.muted}>Creative-first. Performance-led. Brand-obsessed.</Text>
             <Text style={[styles.muted, { marginTop: 8 }]}>contact@rebelmarketingcafe.com · rebelmarketingcafe.com</Text>
           </View>
