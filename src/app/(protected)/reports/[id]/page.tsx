@@ -53,6 +53,18 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const klaviyo = (report.klaviyo_data ?? {}) as SourceData;
   const meta = (report.meta_data ?? {}) as SourceData;
   const manual = normalizeManualData(report.manual_data);
+  // Persist legacy topContentImage → topContentImages so PDFs and future edits use the list field.
+  const rawSocial = (report.manual_data as { social?: { topContentImage?: string; topContentImages?: unknown } } | null)?.social;
+  if (
+    typeof rawSocial?.topContentImage === "string" &&
+    rawSocial.topContentImage.trim() &&
+    (!Array.isArray(rawSocial.topContentImages) || rawSocial.topContentImages.length === 0)
+  ) {
+    await supabaseAdmin()
+      .from("report_snapshots")
+      .update({ manual_data: manual as never })
+      .eq("id", id);
+  }
   const label = formatReportPeriodLabel(report.report_month, report.period_end);
   const connectedNames = [
     sources.shopify ? "Shopify" : null,

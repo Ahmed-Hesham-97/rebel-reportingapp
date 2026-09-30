@@ -29,12 +29,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const sections = normalizeSections(requested ? requested.split(",") : row.included_sections);
   try {
     const snapshot = { ...toReportSnapshot(row), includedSections: sections };
-    // Embed screenshots as data URIs so they reliably appear on the Social Media page.
+    // Ensure legacy single-image uploads are visible even if DB wasn't rewritten yet.
+    const rawSocial = (row.manual_data as { social?: { topContentImage?: string } } | null)?.social;
+    const sourceImages =
+      snapshot.manual.social.topContentImages.length > 0
+        ? snapshot.manual.social.topContentImages
+        : typeof rawSocial?.topContentImage === "string" && rawSocial.topContentImage.trim()
+          ? [rawSocial.topContentImage.trim()]
+          : [];
     snapshot.manual = {
       ...snapshot.manual,
       social: {
         ...snapshot.manual.social,
-        topContentImages: await embedImageUrls(snapshot.manual.social.topContentImages),
+        topContentImages: await embedImageUrls(sourceImages),
       },
     };
     const logoUrl = client.brand_logo_url?.startsWith("http") ? client.brand_logo_url : null;

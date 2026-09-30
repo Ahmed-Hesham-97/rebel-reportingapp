@@ -34,6 +34,7 @@
     "recharts": "latest",
     "resend": "latest",
     "server-only": "latest",
+    "sharp": "^0.35.5",
     "tailwind-merge": "latest",
     "zod": "latest"
   },
@@ -44,6 +45,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sharp": "^0.31.1",
     "@vitejs/plugin-react": "latest",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
