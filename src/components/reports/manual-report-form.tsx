@@ -213,11 +213,16 @@ export function ManualReportForm({ reportId, initial }: Props) {
                     {field.label}
                   </Label>
                   {field.images ? (
-                    <ImagePasteField
-                      reportId={reportId}
-                      values={images}
-                      onChange={(urls) => void updateAndPersist(section.path, field.key, urls)}
-                    />
+                    <div className="space-y-2">
+                      <ImagePasteField
+                        reportId={reportId}
+                        values={images}
+                        onChange={(urls) => void updateAndPersist(section.path, field.key, urls)}
+                      />
+                      <p className="text-xs text-amber-700">
+                        These appear in the PDF only when <strong>01 · Social media</strong> is checked under Download PDF below.
+                      </p>
+                    </div>
                   ) : field.multiline ? (
                     <textarea
                       id={`${section.path}-${field.key}`}

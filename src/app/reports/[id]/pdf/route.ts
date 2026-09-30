@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getApiUser } from "@/lib/authz";
 import { logger } from "@/lib/logger";
+import { embedImageUrls } from "@/lib/pdf/embed-images";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { toReportSnapshot } from "@/lib/reports/snapshot";
 import { ReportDocument } from "@/lib/pdf/report-document";
@@ -14,19 +15,33 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const user = await getApiUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  const { data: row, error } = await supabaseAdmin().from("report_snapshots").select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,manual_data,pdf_url,status,error_log,created_at,included_sections,delivered_at").eq("id", id).maybeSingle();
+  const { data: row, error } = await supabaseAdmin()
+    .from("report_snapshots")
+    .select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,manual_data,pdf_url,status,error_log,created_at,included_sections,delivered_at")
+    .eq("id", id)
+    .maybeSingle();
   if (error) return NextResponse.json({ error: "Unable to load report." }, { status: 500 });
   if (!row) return NextResponse.json({ error: "Report not found." }, { status: 404 });
   const { data: client } = await supabaseAdmin().from("clients").select("name,brand_logo_url").eq("id", row.client_id).maybeSingle();
   if (!client) return NextResponse.json({ error: "Client not found." }, { status: 404 });
-  // Preview/download renders the selected sections as a PDF. No email is sent.
+
   const requested = new URL(request.url).searchParams.get("sections");
   const sections = normalizeSections(requested ? requested.split(",") : row.included_sections);
   try {
     const snapshot = { ...toReportSnapshot(row), includedSections: sections };
-    // Skip broken logos — a bad Image src would otherwise fail the whole PDF.
+    // Embed screenshots as data URIs so they reliably appear on the Social Media page.
+    snapshot.manual = {
+      ...snapshot.manual,
+      social: {
+        ...snapshot.manual.social,
+        topContentImages: await embedImageUrls(snapshot.manual.social.topContentImages),
+      },
+    };
     const logoUrl = client.brand_logo_url?.startsWith("http") ? client.brand_logo_url : null;
-    const buffer = await renderToBuffer(createElement(ReportDocument, { snapshot, clientName: client.name, logoUrl }) as never);
+    const logoEmbedded = logoUrl ? ((await embedImageUrls([logoUrl]))[0] ?? null) : null;
+    const buffer = await renderToBuffer(
+      createElement(ReportDocument, { snapshot, clientName: client.name, logoUrl: logoEmbedded }) as never,
+    );
     const disposition = new URL(request.url).searchParams.get("download") === "1" ? "attachment" : "inline";
     return new NextResponse(new Uint8Array(buffer), {
       headers: {

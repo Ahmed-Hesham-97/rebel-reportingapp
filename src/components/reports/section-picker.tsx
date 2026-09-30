@@ -78,6 +78,12 @@ export function SectionPicker({ reportId, initialSections, availableSections }: 
         </Button>
       </div>
 
+      {selected.length > 0 && !selected.includes("social-media") ? (
+        <p className="mt-3 text-xs text-amber-700">
+          Top performing content images only show when <strong>01 · Social media</strong> is selected.
+        </p>
+      ) : null}
+
       {!selected.length ? <p className="mt-3 text-xs text-amber-700">Select at least one section before downloading.</p> : null}
       {message ? (
         <p role="status" className="mt-3 text-xs text-slate-600">
