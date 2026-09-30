@@ -13,7 +13,7 @@ type Props = {
   initial: ManualReportData;
 };
 
-type Field = { key: string; label: string; multiline?: boolean; image?: boolean };
+type Field = { key: string; label: string; multiline?: boolean; images?: boolean };
 type Section = { title: string; hint: string; path: keyof ManualReportData; fields: Field[] };
 
 const SECTIONS: Section[] = [
@@ -28,7 +28,7 @@ const SECTIONS: Section[] = [
       { key: "stories", label: "Stories published" },
       { key: "communityManagement", label: "Community management (DMs / comments)", multiline: true },
       { key: "topContent", label: "Top performing content (caption)", multiline: true },
-      { key: "topContentImage", label: "Top performing content (image)", image: true },
+      { key: "topContentImages", label: "Top performing content (images)", images: true },
       { key: "highlights", label: "Highlights & wins", multiline: true },
       { key: "reach", label: "Reach (current)" },
       { key: "reachPrev", label: "Reach (previous)" },
@@ -147,7 +147,7 @@ export function ManualReportForm({ reportId, initial }: Props) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
 
-  function update(path: keyof ManualReportData, key: string, value: string) {
+  function update(path: keyof ManualReportData, key: string, value: string | string[]) {
     setData((current) => {
       const section = { ...current[path], [key]: value };
       return { ...current, [path]: section };
@@ -155,7 +155,7 @@ export function ManualReportForm({ reportId, initial }: Props) {
     setMessage("");
   }
 
-  async function updateAndPersist(path: keyof ManualReportData, key: string, value: string) {
+  async function updateAndPersist(path: keyof ManualReportData, key: string, value: string | string[]) {
     const next = {
       ...data,
       [path]: { ...data[path], [key]: value },
@@ -172,7 +172,8 @@ export function ManualReportForm({ reportId, initial }: Props) {
       setMessage(body.error ?? "Image uploaded but could not be saved to the report.");
       return;
     }
-    setMessage(value ? "Image saved to the report." : "Image removed.");
+    const count = Array.isArray(value) ? value.length : value ? 1 : 0;
+    setMessage(count ? `${count} image${count === 1 ? "" : "s"} saved to the report.` : "Images removed.");
   }
 
   async function save() {
@@ -200,20 +201,22 @@ export function ManualReportForm({ reportId, initial }: Props) {
           <p className="mb-4 text-xs text-[var(--muted)]">{section.hint}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {section.fields.map((field) => {
-              const sectionData = data[section.path] as Record<string, string>;
-              const value = sectionData[field.key] ?? "";
+              const sectionData = data[section.path] as Record<string, string | string[]>;
+              const raw = sectionData[field.key];
+              const value = typeof raw === "string" ? raw : "";
+              const images = Array.isArray(raw) ? raw : [];
               const onChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
                 update(section.path, field.key, event.target.value);
               return (
-                <div key={field.key} className={field.multiline || field.image ? "sm:col-span-2" : undefined}>
+                <div key={field.key} className={field.multiline || field.images ? "sm:col-span-2" : undefined}>
                   <Label htmlFor={`${section.path}-${field.key}`} className="mb-1.5 block text-xs text-[var(--muted)]">
                     {field.label}
                   </Label>
-                  {field.image ? (
+                  {field.images ? (
                     <ImagePasteField
                       reportId={reportId}
-                      value={value}
-                      onChange={(url) => void updateAndPersist(section.path, field.key, url)}
+                      values={images}
+                      onChange={(urls) => void updateAndPersist(section.path, field.key, urls)}
                     />
                   ) : field.multiline ? (
                     <textarea

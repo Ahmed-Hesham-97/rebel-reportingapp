@@ -2,15 +2,24 @@ import { z } from "zod";
 
 const str = () => z.string().default("");
 
-const socialSchema = z.object({
+/** Accept a string[], a single URL string, or legacy `{ topContentImage }` and normalize to string[]. */
+function imageList() {
+  return z.preprocess((value) => {
+    if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim());
+    if (typeof value === "string" && value.trim()) return [value.trim()];
+    return [];
+  }, z.array(z.string()).default([]));
+}
+
+const socialObjectSchema = z.object({
   platformsActive: str(),
   feedPosts: str(),
   reels: str(),
   stories: str(),
   communityManagement: str(),
   topContent: str(),
-  /** Public URL of a pasted/uploaded screenshot for top performing content. */
-  topContentImage: str(),
+  /** Public URLs of pasted/uploaded screenshots for top performing content. */
+  topContentImages: imageList(),
   highlights: str(),
   reach: str(),
   reachPrev: str(),
@@ -28,6 +37,16 @@ const socialSchema = z.object({
   savesSharesPrev: str(),
   nextMonth: str(),
 });
+
+const socialSchema = z.preprocess((value) => {
+  if (!value || typeof value !== "object") return {};
+  const row = value as Record<string, unknown>;
+  // Migrate the old single-image field into the list.
+  if (!row.topContentImages && typeof row.topContentImage === "string" && row.topContentImage.trim()) {
+    return { ...row, topContentImages: [row.topContentImage.trim()] };
+  }
+  return row;
+}, socialObjectSchema);
 
 const paidSchema = z.object({
   metaNotes: str(),
@@ -129,6 +148,7 @@ export function normalizeManualData(value: unknown): ManualReportData {
 export function hasManualContent(data: ManualReportData) {
   const walk = (value: unknown): boolean => {
     if (typeof value === "string") return value.trim().length > 0;
+    if (Array.isArray(value)) return value.some(walk);
     if (value && typeof value === "object") return Object.values(value).some(walk);
     return false;
   };

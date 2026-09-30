@@ -203,9 +203,17 @@ export function ReportDocument({
           <ActivityLine label="Stories published" value={manual.social.stories} />
           <ActivityLine label="Community management (DMs / comments)" value={manual.social.communityManagement} />
           <ActivityLine label="Top performing content" value={manual.social.topContent} />
-          {manual.social.topContentImage.trim().startsWith("http") ? (
-            <View style={{ marginTop: 8, marginBottom: 4 }}>
-              <Image src={manual.social.topContentImage.trim()} style={{ width: 280, maxHeight: 360 }} />
+          {manual.social.topContentImages.filter((src) => src.trim().startsWith("http")).length ? (
+            <View style={{ marginTop: 8, marginBottom: 4, flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {manual.social.topContentImages
+                .filter((src) => src.trim().startsWith("http"))
+                .map((src, index) => (
+                  <Image
+                    key={`${src}-${index}`}
+                    src={src.trim()}
+                    style={{ width: 240, maxHeight: 320, objectFit: "contain", marginBottom: 6 }}
+                  />
+                ))}
             </View>
           ) : null}
           <ActivityLine label="Highlights & wins" value={manual.social.highlights} />
