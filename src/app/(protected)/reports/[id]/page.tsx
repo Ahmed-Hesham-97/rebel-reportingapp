@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { DeltaMetric, ShopifyMetrics } from "@/types/report";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
-import { formatCurrency, formatNumber, formatPercent } from "@/lib/utils";
+import { formatCurrency, formatNumber, formatPercent, formatRatePercent } from "@/lib/utils";
 import { RevenueChart } from "@/components/reports/revenue-chart";
 import { SectionPicker } from "@/components/reports/section-picker";
 import { DeleteReportButton } from "@/components/reports/delete-report-button";
@@ -205,7 +205,7 @@ function MetricCard({
   let value = "—";
   if (current !== null && current !== undefined) {
     if (currency) value = formatCurrency(current);
-    else if (percent) value = `${current.toFixed(1)}%`;
+    else if (percent) value = formatRatePercent(current);
     else value = formatNumber(current);
   }
 
@@ -216,7 +216,7 @@ function MetricCard({
     comparison = "New vs $0 last month";
   } else if (typeof previous === "number") {
     if (currency) comparison = `vs ${formatCurrency(previous)} last month`;
-    else if (percent) comparison = `vs ${previous.toFixed(1)}% last month`;
+    else if (percent) comparison = `vs ${formatRatePercent(previous)} last month`;
     else comparison = `vs ${formatNumber(previous)} last month`;
   } else if (emptyHint) {
     comparison = emptyHint;

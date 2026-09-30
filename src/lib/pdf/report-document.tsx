@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { registerReportFonts } from "@/lib/pdf/fonts";
 import { normalizeSections, type ReportSectionId } from "@/lib/reports/sections";
+import { asPercentPoints } from "@/lib/utils";
 import type { DeltaMetric, ManualReportData, ReportSnapshot } from "@/types/report";
 
 registerReportFonts();
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
 function fmt(value: number | null | undefined, opts?: { currency?: string; percent?: boolean; digits?: number }) {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   if (opts?.currency) return value.toLocaleString("en-US", { style: "currency", currency: opts.currency, maximumFractionDigits: opts.digits ?? 0 });
-  if (opts?.percent) return `${value.toFixed(opts.digits ?? 1)}%`;
+  if (opts?.percent) return `${asPercentPoints(value).toFixed(opts.digits ?? 1)}%`;
   return value.toLocaleString("en-US", { maximumFractionDigits: opts?.digits ?? 2 });
 }
 
@@ -329,11 +330,11 @@ export function ReportDocument({
       {includes("email-sms") && (
         <SectionPage eyebrow="04 · Email & SMS" title="Lifecycle marketing" clientName={clientName}>
           <Text style={styles.subheading}>Activity</Text>
-          <ActivityLine label="Campaigns sent" value={manual.email.campaignsSent} />
-          <ActivityLine label="Flows active / built / optimized" value={manual.email.flowsActivity} />
-          <ActivityLine label="List growth activity" value={manual.email.listGrowthActivity} />
-          <ActivityLine label="A/B tests run" value={manual.email.abTests} />
-          <ActivityLine label="Highlights" value={manual.email.highlights} />
+          <ActivityLine label="Campaigns sent" value={manual.email.campaignsSent || klaviyo?.activity?.campaignsSent || ""} />
+          <ActivityLine label="Flows active / built / optimized" value={manual.email.flowsActivity || klaviyo?.activity?.flowsSummary || ""} />
+          <ActivityLine label="List growth activity" value={manual.email.listGrowthActivity || klaviyo?.activity?.listGrowthActivity || ""} />
+          <ActivityLine label="A/B tests run" value={manual.email.abTests || klaviyo?.activity?.abTestsRun || ""} />
+          <ActivityLine label="Highlights" value={manual.email.highlights || klaviyo?.activity?.highlights || ""} />
           <Text style={styles.subheading}>Performance</Text>
           {klaviyo ? (
             <MetricTable

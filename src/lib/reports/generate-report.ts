@@ -10,6 +10,7 @@ import { recordActivity } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 import { IntegrationError } from "@/lib/integrations/retry";
 import { normalizeSections, sectionsForSources } from "@/lib/reports/sections";
+import { normalizeManualData } from "@/lib/reports/manual-data";
 import type { SourceName } from "@/types/report";
 
 function sourceErrorMessage(source: SourceName, error: unknown) {
@@ -105,6 +106,32 @@ export async function generateReport(
     });
   }
 
+  // Seed Email Activity blanks from Klaviyo when the team hasn't typed over them yet.
+  const { data: priorRow } = await supabaseAdmin()
+    .from("report_snapshots")
+    .select("manual_data")
+    .eq("id", snapshot.id)
+    .maybeSingle();
+  const manual = normalizeManualData(priorRow?.manual_data);
+  const klaviyo = values.klaviyo as {
+    activity?: {
+      campaignsSent?: string | null;
+      flowsSummary?: string | null;
+      listGrowthActivity?: string | null;
+      abTestsRun?: string | null;
+      highlights?: string | null;
+    };
+  } | null;
+  if (klaviyo?.activity) {
+    if (!manual.email.campaignsSent.trim() && klaviyo.activity.campaignsSent) manual.email.campaignsSent = klaviyo.activity.campaignsSent;
+    if (!manual.email.flowsActivity.trim() && klaviyo.activity.flowsSummary) manual.email.flowsActivity = klaviyo.activity.flowsSummary;
+    if (!manual.email.listGrowthActivity.trim() && klaviyo.activity.listGrowthActivity) {
+      manual.email.listGrowthActivity = klaviyo.activity.listGrowthActivity;
+    }
+    if (!manual.email.abTests.trim() && klaviyo.activity.abTestsRun) manual.email.abTests = klaviyo.activity.abTestsRun;
+    if (!manual.email.highlights.trim() && klaviyo.activity.highlights) manual.email.highlights = klaviyo.activity.highlights;
+  }
+
   const status = errors.length === 0 ? "completed" : values.shopify || values.klaviyo || values.meta ? "partial" : "failed";
   const { error: updateError } = await supabaseAdmin()
     .from("report_snapshots")
@@ -112,6 +139,7 @@ export async function generateReport(
       shopify_data: values.shopify as never,
       klaviyo_data: values.klaviyo as never,
       meta_data: values.meta as never,
+      manual_data: manual as never,
       status,
       error_log: errors.length ? errors.join("\n") : null,
     })

@@ -3,6 +3,7 @@ import { encryptSecret, decryptSecret } from "@/lib/security/encryption";
 import { getReportMonthPeriod, percentChange } from "@/lib/reports/date-range";
 import { buildExecutiveSummary } from "@/lib/reports/executive-summary";
 import { ALL_SECTION_IDS, normalizeSections } from "@/lib/reports/sections";
+import { asPercentPoints, formatRatePercent } from "@/lib/utils";
 
 beforeEach(() => {
   process.env.NEXTAUTH_SECRET = "a".repeat(32);
@@ -91,5 +92,15 @@ describe("report section selection", () => {
 
   it("maps legacy section ids onto the template sections", () => {
     expect(normalizeSections(["meta", "not-a-section", "shopify"])).toEqual(["paid-media", "website"]);
+  });
+});
+
+describe("percent display scaling", () => {
+  it("turns ShopifyQL fractions into percentage points", () => {
+    expect(asPercentPoints(0.0167)).toBeCloseTo(1.67);
+    expect(asPercentPoints(0.7)).toBeCloseTo(70);
+    expect(asPercentPoints(1.67)).toBeCloseTo(1.67);
+    expect(formatRatePercent(0.021)).toBe("2.1%");
+    expect(formatRatePercent(2.1)).toBe("2.1%");
   });
 });
