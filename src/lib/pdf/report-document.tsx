@@ -63,10 +63,10 @@ function display(value: string | null | undefined) {
   return trimmed ? trimmed : "—";
 }
 
-function Footer({ clientName }: { clientName: string }) {
+function Footer() {
   return (
     <View style={styles.footer} fixed>
-      <Text>Confidential — Rebel Marketing · {clientName}</Text>
+      <Text />
       <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   );
@@ -141,12 +141,11 @@ function NextMonth({ value }: { value: string }) {
 function SectionPage({
   eyebrow,
   title,
-  clientName,
   children,
 }: {
   eyebrow: string;
   title: string;
-  clientName: string;
+  clientName?: string;
   children: ReactNode;
 }) {
   return (
@@ -154,7 +153,7 @@ function SectionPage({
       <Text style={styles.sectionEyebrow}>{eyebrow}</Text>
       <Text style={styles.heading}>{title}</Text>
       {children}
-      <Footer clientName={clientName} />
+      <Footer />
     </Page>
   );
 }
