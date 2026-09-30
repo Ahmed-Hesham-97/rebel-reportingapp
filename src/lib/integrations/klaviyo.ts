@@ -123,9 +123,10 @@ function aggregate(results: ValuesResult[]) {
 }
 
 async function findConversionMetricId(apiKey: string) {
+  // Metrics list supports page[cursor] only — page[size] returns 400 ("page_size is not a valid field").
   const response = await requestJson<KlaviyoList<{ name?: string }>>(
     "klaviyo",
-    klaviyoUrl("metrics/", { "fields[metric]": "name", "page[size]": "100" }),
+    klaviyoUrl("metrics/", { "fields[metric]": "name" }),
     { headers: headers(apiKey) },
   );
   const metrics = response.data ?? [];
