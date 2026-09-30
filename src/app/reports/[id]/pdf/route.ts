@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getApiUser } from "@/lib/authz";
+import { logger } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { toReportSnapshot } from "@/lib/reports/snapshot";
 import { ReportDocument } from "@/lib/pdf/report-document";
@@ -23,7 +24,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const sections = normalizeSections(requested ? requested.split(",") : row.included_sections);
   try {
     const snapshot = { ...toReportSnapshot(row), includedSections: sections };
-    const buffer = await renderToBuffer(createElement(ReportDocument, { snapshot, clientName: client.name, logoUrl: client.brand_logo_url }) as never);
+    // Skip broken logos — a bad Image src would otherwise fail the whole PDF.
+    const logoUrl = client.brand_logo_url?.startsWith("http") ? client.brand_logo_url : null;
+    const buffer = await renderToBuffer(createElement(ReportDocument, { snapshot, clientName: client.name, logoUrl }) as never);
     const disposition = new URL(request.url).searchParams.get("download") === "1" ? "attachment" : "inline";
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
@@ -31,7 +34,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         "Content-Disposition": `${disposition}; filename="${client.name.replace(/[^a-z0-9]+/gi, "-")}-${row.report_month}.pdf"`,
       },
     });
-  } catch {
-    return NextResponse.json({ error: "Unable to render PDF." }, { status: 500 });
+  } catch (error) {
+    logger.error({ err: error, reportId: id }, "pdf render failed");
+    const detail = error instanceof Error ? error.message : "Unable to render PDF.";
+    return NextResponse.json({ error: "Unable to render PDF.", detail }, { status: 500 });
   }
 }
