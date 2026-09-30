@@ -203,19 +203,23 @@ export function ReportDocument({
           <ActivityLine label="Stories published" value={manual.social.stories} />
           <ActivityLine label="Community management (DMs / comments)" value={manual.social.communityManagement} />
           <ActivityLine label="Top performing content" value={manual.social.topContent} />
-          {manual.social.topContentImages.filter((src) => src.trim().startsWith("http")).length ? (
-            <View style={{ marginTop: 8, marginBottom: 4, flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {manual.social.topContentImages
-                .filter((src) => src.trim().startsWith("http"))
-                .map((src, index) => (
+          {(() => {
+            const topImages = manual.social.topContentImages
+              .map((src) => src.trim())
+              .filter((src) => src.startsWith("http") || src.startsWith("data:image/"));
+            if (!topImages.length) return null;
+            return (
+              <View style={{ marginTop: 8, marginBottom: 4, flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {topImages.map((src, index) => (
                   <Image
-                    key={`${src}-${index}`}
-                    src={src.trim()}
+                    key={`top-content-${index}`}
+                    src={src}
                     style={{ width: 240, maxHeight: 320, objectFit: "contain", marginBottom: 6 }}
                   />
                 ))}
-            </View>
-          ) : null}
+              </View>
+            );
+          })()}
           <ActivityLine label="Highlights & wins" value={manual.social.highlights} />
           <Text style={styles.subheading}>Performance</Text>
           <MetricTable

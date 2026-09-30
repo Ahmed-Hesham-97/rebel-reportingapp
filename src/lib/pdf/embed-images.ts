@@ -8,11 +8,11 @@ export async function embedImageUrls(urls: string[]): Promise<string[]> {
   const embedded: string[] = [];
   for (const url of urls) {
     const trimmed = url.trim();
-    if (!trimmed.startsWith("http")) continue;
-    if (trimmed.startsWith("data:")) {
+    if (trimmed.startsWith("data:image/")) {
       embedded.push(trimmed);
       continue;
     }
+    if (!trimmed.startsWith("http")) continue;
     try {
       const response = await fetch(trimmed, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
       if (!response.ok) continue;
