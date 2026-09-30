@@ -178,6 +178,13 @@ function number(value: string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** ShopifyQL PERCENT metrics arrive as decimals (0.25 = 25%). Store as display percentages. */
+function ratePercent(value: string | null | undefined) {
+  const parsed = number(value);
+  if (parsed === null) return null;
+  return parsed <= 1 ? parsed * 100 : parsed;
+}
+
 /** ShopifyQL date bounds are inclusive, so UNTIL is the last day inside the period. */
 function shopifyqlRange(start: string, end: string, timezone: string) {
   const lastDay = new Date(new Date(end).getTime() - 24 * 60 * 60 * 1000);
@@ -202,7 +209,7 @@ async function trafficBreakdown(storeUrl: string, token: string, range: string, 
   return rows.map((row) => ({
     label: row[dimension] ?? "Unknown",
     sessions: number(row.sessions) ?? 0,
-    conversionRate: number(row.conversion_rate),
+    conversionRate: ratePercent(row.conversion_rate),
   }));
 }
 
@@ -218,13 +225,14 @@ async function fetchFunnel(storeUrl: string, token: string, period: ReportPeriod
       trafficBreakdown(storeUrl, token, currentRange, "session_device_type"),
     ]);
     const delta = (key: string) => metric(number(current[key]), number(previous[key]));
+    const rateDelta = (key: string) => metric(ratePercent(current[key]), ratePercent(previous[key]));
     return {
       sessions: delta("sessions"),
       onlineStoreVisitors: delta("online_store_visitors"),
-      addedToCartRate: delta("added_to_cart_rate"),
-      conversionRate: delta("conversion_rate"),
-      checkoutConversionRate: delta("checkout_conversion_rate"),
-      bounceRate: delta("bounce_rate"),
+      addedToCartRate: rateDelta("added_to_cart_rate"),
+      conversionRate: rateDelta("conversion_rate"),
+      checkoutConversionRate: rateDelta("checkout_conversion_rate"),
+      bounceRate: rateDelta("bounce_rate"),
       byReferrerSource,
       byDeviceType,
     };

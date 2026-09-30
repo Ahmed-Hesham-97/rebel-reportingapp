@@ -1,8 +1,11 @@
 /* eslint-disable jsx-a11y/alt-text */
 import type { ReactNode } from "react";
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { registerReportFonts } from "@/lib/pdf/fonts";
 import { normalizeSections, type ReportSectionId } from "@/lib/reports/sections";
 import type { DeltaMetric, ManualReportData, ReportSnapshot } from "@/types/report";
+
+registerReportFonts();
 
 const brand = "#e11d48";
 const ink = "#0f172a";
@@ -11,14 +14,14 @@ const line = "#e2e8f0";
 const wash = "#f8fafc";
 
 const styles = StyleSheet.create({
-  page: { paddingTop: 42, paddingBottom: 52, paddingHorizontal: 42, fontFamily: "Helvetica", color: ink, fontSize: 10 },
+  page: { paddingTop: 42, paddingBottom: 52, paddingHorizontal: 42, fontFamily: "DMSans", color: ink, fontSize: 10 },
   cover: { justifyContent: "center", backgroundColor: ink, color: "#fff", padding: 48 },
-  brandMark: { color: brand, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", marginBottom: 28 },
-  coverTitle: { fontSize: 28, fontFamily: "Helvetica-Bold", marginBottom: 8 },
+  brandMark: { color: brand, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", marginBottom: 28, fontFamily: "Syne", fontWeight: 700 },
+  coverTitle: { fontSize: 30, fontFamily: "Syne", fontWeight: 800, marginBottom: 8 },
   coverMeta: { marginTop: 28, fontSize: 11, color: "#cbd5e1", lineHeight: 1.7 },
-  sectionEyebrow: { color: brand, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, fontFamily: "Helvetica-Bold" },
-  heading: { fontSize: 20, fontFamily: "Helvetica-Bold", marginBottom: 14 },
-  subheading: { fontSize: 11, fontFamily: "Helvetica-Bold", marginTop: 14, marginBottom: 8, color: ink },
+  sectionEyebrow: { color: brand, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, fontFamily: "Syne", fontWeight: 700 },
+  heading: { fontSize: 22, fontFamily: "Syne", fontWeight: 700, marginBottom: 14 },
+  subheading: { fontSize: 11, fontFamily: "Syne", fontWeight: 700, marginTop: 14, marginBottom: 8, color: ink },
   muted: { color: muted, fontSize: 9 },
   body: { fontSize: 10, lineHeight: 1.5, color: ink },
   activityRow: { flexDirection: "row", paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: line },
@@ -28,7 +31,7 @@ const styles = StyleSheet.create({
   tableRow: { flexDirection: "row", paddingVertical: 7, paddingHorizontal: 8, borderBottomWidth: 0.5, borderBottomColor: line },
   colMetric: { width: "40%", fontSize: 9 },
   colPrev: { width: "20%", fontSize: 9, textAlign: "right" },
-  colCurrent: { width: "20%", fontSize: 9, textAlign: "right", fontFamily: "Helvetica-Bold" },
+  colCurrent: { width: "20%", fontSize: 9, textAlign: "right", fontFamily: "DMSans", fontWeight: 700 },
   colChange: { width: "20%", fontSize: 9, textAlign: "right" },
   noteBox: { marginTop: 10, padding: 12, backgroundColor: wash },
   footer: { position: "absolute", bottom: 24, left: 42, right: 42, borderTopWidth: 1, borderTopColor: line, paddingTop: 8, fontSize: 8, color: muted, flexDirection: "row", justifyContent: "space-between" },
@@ -85,10 +88,10 @@ function MetricTable({
   return (
     <View>
       <View style={styles.tableHeader}>
-        <Text style={[styles.colMetric, { fontFamily: "Helvetica-Bold" }]}>Metric</Text>
-        <Text style={[styles.colPrev, { fontFamily: "Helvetica-Bold" }]}>Prev.</Text>
-        <Text style={[styles.colCurrent, { fontFamily: "Helvetica-Bold" }]}>Current</Text>
-        <Text style={[styles.colChange, { fontFamily: "Helvetica-Bold" }]}>% Change</Text>
+        <Text style={[styles.colMetric, { fontFamily: "Syne", fontWeight: 700 }]}>Metric</Text>
+        <Text style={[styles.colPrev, { fontFamily: "Syne", fontWeight: 700 }]}>Prev.</Text>
+        <Text style={[styles.colCurrent, { fontFamily: "Syne", fontWeight: 700 }]}>Current</Text>
+        <Text style={[styles.colChange, { fontFamily: "Syne", fontWeight: 700 }]}>% Change</Text>
       </View>
       {rows.map((row) => (
         <View style={styles.tableRow} key={row.label}>

@@ -123,12 +123,10 @@ function aggregate(results: ValuesResult[]) {
 }
 
 async function findConversionMetricId(apiKey: string) {
-  // Metrics list supports page[cursor] only — page[size] returns 400 ("page_size is not a valid field").
-  const response = await requestJson<KlaviyoList<{ name?: string }>>(
-    "klaviyo",
-    klaviyoUrl("metrics/", { "fields[metric]": "name" }),
-    { headers: headers(apiKey) },
-  );
+  // Metrics list supports page[cursor] only — never send page[size] (400: page_size invalid field).
+  const response = await requestJson<KlaviyoList<{ name?: string }>>("klaviyo", klaviyoUrl("metrics/"), {
+    headers: headers(apiKey),
+  });
   const metrics = response.data ?? [];
   const preferred =
     metrics.find((item) => /placed order/i.test(item.attributes?.name ?? "")) ??
@@ -170,9 +168,10 @@ async function queryValues(
 }
 
 async function listFlows(apiKey: string) {
+  // Avoid page[size] here — some account revisions reject size pagination on list endpoints.
   const response = await requestJson<KlaviyoList<KlaviyoAttributes>>(
     "klaviyo",
-    klaviyoUrl("flows/", { "fields[flow]": "name,status", "page[size]": "50" }),
+    klaviyoUrl("flows/", { "fields[flow]": "name,status" }),
     { headers: headers(apiKey) },
   );
   return response.data ?? [];
