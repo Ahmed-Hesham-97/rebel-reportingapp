@@ -18,11 +18,8 @@ const clientSchema = z.object({
   name: z.string().trim().min(1).max(150),
   brandLogoUrl: z.string().url().optional().or(z.literal("")),
   shopifyStoreUrl: shopifyStoreUrlSchema,
-  // Left blank when the store will be connected over OAuth instead.
   shopifyAccessToken: z.string().optional(),
   klaviyoApiKey: z.string().optional(),
-  metaAccessToken: z.string().optional(),
-  metaAdAccountId: z.string().trim().optional(),
   reportRecipients: z.array(z.string().email()).default([]),
 });
 
@@ -41,25 +38,20 @@ export async function POST(request: Request) {
       shopify_store_url: value.shopifyStoreUrl,
       shopify_access_token: value.shopifyAccessToken?.trim() ? encryptSecret(value.shopifyAccessToken.trim()) : null,
       klaviyo_api_key: value.klaviyoApiKey?.trim() ? encryptSecret(value.klaviyoApiKey.trim()) : null,
-      meta_access_token: value.metaAccessToken?.trim() ? encryptSecret(value.metaAccessToken.trim()) : null,
-      meta_ad_account_id: value.metaAdAccountId || null,
+      meta_access_token: null,
+      meta_ad_account_id: null,
       report_recipients: value.reportRecipients,
     })
-    .select("id,shopify_access_token,klaviyo_api_key,meta_access_token,meta_ad_account_id")
+    .select("id,shopify_access_token,klaviyo_api_key")
     .single();
   if (error) return NextResponse.json({ error: `Unable to create client: ${error.message}` }, { status: 500 });
   return NextResponse.json(
     {
       id: data.id,
-      savedSecrets: [
-        data.shopify_access_token ? "shopify" : null,
-        data.klaviyo_api_key ? "klaviyo" : null,
-        data.meta_access_token ? "meta" : null,
-      ].filter(Boolean),
+      savedSecrets: [data.shopify_access_token ? "shopify" : null, data.klaviyo_api_key ? "klaviyo" : null].filter(Boolean),
       has: {
         shopify: Boolean(data.shopify_access_token),
         klaviyo: Boolean(data.klaviyo_api_key),
-        meta: Boolean(data.meta_access_token && data.meta_ad_account_id),
       },
     },
     { status: 201 },

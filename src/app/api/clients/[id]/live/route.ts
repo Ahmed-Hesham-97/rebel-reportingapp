@@ -3,7 +3,6 @@ import { getApiUser } from "@/lib/authz";
 import { getClient, getClientSecrets } from "@/lib/db";
 import { testShopifyConnection, fetchShopifyMetrics } from "@/lib/integrations/shopify";
 import { fetchKlaviyoMetrics } from "@/lib/integrations/klaviyo";
-import { fetchMetaMetrics } from "@/lib/integrations/meta";
 import { getPreviousMonthPeriod } from "@/lib/reports/date-range";
 
 export const runtime = "nodejs";
@@ -19,17 +18,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const shop = await testShopifyConnection(client.shopify_store_url, shopifyToken).catch(() => ({ timezone: "UTC" }));
   const period = getPreviousMonthPeriod(new Date(), shop.timezone);
   const klaviyoKey = secrets.klaviyoApiKey;
-  const metaToken = secrets.metaAccessToken;
-  const metaAccount = client.meta_ad_account_id;
-  const [shopify, klaviyo, meta] = await Promise.allSettled([
+  const [shopify, klaviyo] = await Promise.allSettled([
     fetchShopifyMetrics(client.shopify_store_url, shopifyToken, period),
     klaviyoKey ? fetchKlaviyoMetrics(klaviyoKey, period) : Promise.resolve(null),
-    metaToken && metaAccount ? fetchMetaMetrics(metaToken, metaAccount, period) : Promise.resolve(null),
   ]);
   return NextResponse.json({
     period,
     shopify: shopify.status === "fulfilled" ? shopify.value : null,
     klaviyo: klaviyo.status === "fulfilled" ? klaviyo.value : null,
-    meta: meta.status === "fulfilled" ? meta.value : null,
   });
 }

@@ -4,12 +4,11 @@ import { configuredSources, getClient, getClientSecrets } from "@/lib/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { testShopifyConnection, fetchShopifyMetrics } from "@/lib/integrations/shopify";
 import { fetchKlaviyoMetrics } from "@/lib/integrations/klaviyo";
-import { fetchMetaMetrics } from "@/lib/integrations/meta";
 import { getReportMonthPeriod, getReportRangePeriod } from "@/lib/reports/date-range";
 import { recordActivity } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 import { IntegrationError } from "@/lib/integrations/retry";
-import { normalizeSections, sectionsForSources } from "@/lib/reports/sections";
+import { sectionsForSources } from "@/lib/reports/sections";
 import { normalizeManualData } from "@/lib/reports/manual-data";
 import type { SourceName } from "@/types/report";
 
@@ -45,7 +44,7 @@ export async function generateReport(
   if (!shopifyToken) throw new Error("Connect the Shopify store before generating a report");
   const sources = configuredSources(client);
   const available = sectionsForSources(sources);
-  const defaultSections = normalizeSections(client.default_sections).filter((id) => available.includes(id));
+  const defaultSections = available;
 
   const connection = await testShopifyConnection(client.shopify_store_url, shopifyToken).catch((error) => {
     logger.warn({ clientId, error: error instanceof Error ? error.message : "unknown" }, "shopify timezone lookup failed");
@@ -94,9 +93,7 @@ export async function generateReport(
 
   const optional: Array<[SourceName, Promise<unknown>]> = [];
   if (sources.klaviyo && secrets.klaviyoApiKey) optional.push(["klaviyo", fetchKlaviyoMetrics(secrets.klaviyoApiKey, period)]);
-  if (sources.meta && secrets.metaAccessToken && client.meta_ad_account_id) {
-    optional.push(["meta", fetchMetaMetrics(secrets.metaAccessToken, client.meta_ad_account_id, period)]);
-  }
+  // Meta Ads is manual-only — never fetched from an ad account link.
   if (optional.length) {
     const settled = await Promise.allSettled(optional.map(([, job]) => job));
     settled.forEach((result, index) => {
@@ -132,13 +129,13 @@ export async function generateReport(
     if (!manual.email.highlights.trim() && klaviyo.activity.highlights) manual.email.highlights = klaviyo.activity.highlights;
   }
 
-  const status = errors.length === 0 ? "completed" : values.shopify || values.klaviyo || values.meta ? "partial" : "failed";
+  const status = errors.length === 0 ? "completed" : values.shopify || values.klaviyo ? "partial" : "failed";
   const { error: updateError } = await supabaseAdmin()
     .from("report_snapshots")
     .update({
       shopify_data: values.shopify as never,
       klaviyo_data: values.klaviyo as never,
-      meta_data: values.meta as never,
+      meta_data: null,
       manual_data: manual as never,
       status,
       error_log: errors.length ? errors.join("\n") : null,

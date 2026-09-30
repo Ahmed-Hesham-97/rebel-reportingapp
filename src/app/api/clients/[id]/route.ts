@@ -29,8 +29,6 @@ const updateSchema = z.object({
   shopifyStoreUrl: shopifyStoreUrlSchema,
   shopifyAccessToken: optionalSecret,
   klaviyoApiKey: optionalSecret,
-  metaAccessToken: optionalSecret,
-  metaAdAccountId: z.string().trim().optional(),
   reportRecipients: z.array(z.string().email()).default([]),
 });
 
@@ -52,16 +50,13 @@ export async function PATCH(request: Request, { params }: Context) {
     name: string;
     brand_logo_url: string | null;
     shopify_store_url: string;
-    meta_ad_account_id: string | null;
     report_recipients: string[];
     shopify_access_token?: string;
     klaviyo_api_key?: string;
-    meta_access_token?: string;
   } = {
     name: value.name,
     brand_logo_url: value.brandLogoUrl || null,
     shopify_store_url: value.shopifyStoreUrl,
-    meta_ad_account_id: value.metaAdAccountId || null,
     report_recipients: value.reportRecipients,
   };
 
@@ -73,16 +68,12 @@ export async function PATCH(request: Request, { params }: Context) {
     update.klaviyo_api_key = encryptSecret(value.klaviyoApiKey);
     savedSecrets.push("klaviyo");
   }
-  if (value.metaAccessToken) {
-    update.meta_access_token = encryptSecret(value.metaAccessToken);
-    savedSecrets.push("meta");
-  }
 
   const { data, error } = await supabaseAdmin()
     .from("clients")
     .update(update)
     .eq("id", id)
-    .select("id,shopify_access_token,klaviyo_api_key,meta_access_token,meta_ad_account_id")
+    .select("id,shopify_access_token,klaviyo_api_key")
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: `Unable to update client: ${error.message}` }, { status: 500 });
@@ -94,7 +85,6 @@ export async function PATCH(request: Request, { params }: Context) {
     has: {
       shopify: Boolean(data.shopify_access_token),
       klaviyo: Boolean(data.klaviyo_api_key),
-      meta: Boolean(data.meta_access_token && data.meta_ad_account_id),
     },
   });
 }

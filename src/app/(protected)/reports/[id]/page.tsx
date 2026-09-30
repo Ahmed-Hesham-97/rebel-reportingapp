@@ -12,7 +12,7 @@ import { SectionPicker } from "@/components/reports/section-picker";
 import { DeleteReportButton } from "@/components/reports/delete-report-button";
 import { ManualReportForm } from "@/components/reports/manual-report-form";
 import { normalizeManualData } from "@/lib/reports/manual-data";
-import { normalizeSections, sectionsForSources } from "@/lib/reports/sections";
+import { sectionsForSources } from "@/lib/reports/sections";
 import { formatReportPeriodLabel } from "@/lib/reports/date-range";
 
 type SourceData = {
@@ -40,18 +40,17 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   if (!report) notFound();
   const { data: client } = await supabaseAdmin()
     .from("clients")
-    .select("name,klaviyo_api_key,meta_access_token,meta_ad_account_id")
+    .select("name,klaviyo_api_key")
     .eq("id", report.client_id)
     .maybeSingle();
   const sources = {
     shopify: true,
     klaviyo: Boolean(client?.klaviyo_api_key),
-    meta: Boolean(client?.meta_access_token && client?.meta_ad_account_id),
+    meta: false,
   };
   const available = sectionsForSources(sources);
   const shopify = (report.shopify_data ?? {}) as SourceData;
   const klaviyo = (report.klaviyo_data ?? {}) as SourceData;
-  const meta = (report.meta_data ?? {}) as SourceData;
   const manual = normalizeManualData(report.manual_data);
   // Persist legacy topContentImage → topContentImages so PDFs and future edits use the list field.
   const rawSocial = (report.manual_data as { social?: { topContentImage?: string; topContentImages?: unknown } } | null)?.social;
@@ -66,11 +65,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       .eq("id", id);
   }
   const label = formatReportPeriodLabel(report.report_month, report.period_end);
-  const connectedNames = [
-    sources.shopify ? "Shopify" : null,
-    sources.klaviyo ? "Klaviyo" : null,
-    sources.meta ? "Meta Ads" : null,
-  ].filter(Boolean);
+  const connectedNames = [sources.shopify ? "Shopify" : null, sources.klaviyo ? "Klaviyo" : null].filter(Boolean);
   const funnel = shopify.funnel;
 
   return (
@@ -131,21 +126,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             currency
             emptyHint={sources.klaviyo ? undefined : "Klaviyo not connected"}
           />
-          <MetricCard source="Meta ROAS" metric={meta.roas} emptyHint={sources.meta ? undefined : "Meta not connected"} />
-          <MetricCard
-            source="Meta ad spend"
-            metric={meta.spend}
-            currency
-            emptyHint={sources.meta ? undefined : "Meta not connected"}
-          />
         </div>
 
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Manual report fields</CardTitle>
             <p className="text-sm text-[var(--muted)]">
-              Everything in the Rebel monthly template that Shopify (and connected Meta / Klaviyo) cannot supply.
-              Save before downloading the PDF.
+              Meta Ads, Google Ads, social, and other template fields are entered here — nothing is pulled from an ad account link. Save before downloading the PDF.
             </p>
           </CardHeader>
           <CardContent>
@@ -157,13 +144,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           <CardHeader>
             <CardTitle>Download PDF</CardTitle>
             <p className="text-sm text-[var(--muted)]">
-              Combines pulled Shopify / Meta / Klaviyo data with the manual fields above. Your section selection becomes this client&apos;s default.
+              Combines pulled Shopify / Klaviyo data with the manual fields above (including Meta Ads). Your section selection becomes this client&apos;s default.
             </p>
           </CardHeader>
           <CardContent>
             <SectionPicker
               reportId={id}
-              initialSections={normalizeSections(report.included_sections).filter((section) => available.includes(section))}
+              initialSections={available}
               availableSections={available}
             />
           </CardContent>
@@ -176,13 +163,15 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-3">
               {[
-                { name: "Shopify", data: report.shopify_data, connected: sources.shopify },
-                { name: "Klaviyo", data: report.klaviyo_data, connected: sources.klaviyo },
-                { name: "Meta Ads", data: report.meta_data, connected: sources.meta },
+                { name: "Shopify", data: report.shopify_data, connected: sources.shopify, mode: "api" as const },
+                { name: "Klaviyo", data: report.klaviyo_data, connected: sources.klaviyo, mode: "api" as const },
+                { name: "Meta Ads", data: null, connected: true, mode: "manual" as const },
               ].map((source) => (
                 <div key={source.name} className="flex items-center justify-between rounded-2xl bg-[var(--surface-muted)] p-4 text-sm">
                   <span className="font-medium">{source.name}</span>
-                  {source.connected ? (
+                  {source.mode === "manual" ? (
+                    <span className="text-xs font-medium text-[var(--muted)]">Manual entry</span>
+                  ) : source.connected ? (
                     <StatusBadge status={source.data ? "completed" : "failed"} />
                   ) : (
                     <span className="text-xs font-medium text-[var(--muted)]">Not connected</span>

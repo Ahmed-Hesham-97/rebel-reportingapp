@@ -13,12 +13,10 @@ type ClientFormValues = {
   shopifyStoreUrl: string;
   shopifyAccessToken: string;
   klaviyoApiKey: string;
-  metaAccessToken: string;
-  metaAdAccountId: string;
   reportRecipients: string;
 };
 
-type SavedFlags = { shopify: boolean; klaviyo: boolean; meta: boolean };
+type SavedFlags = { shopify: boolean; klaviyo: boolean };
 
 const emptyValues: ClientFormValues = {
   name: "",
@@ -26,8 +24,6 @@ const emptyValues: ClientFormValues = {
   shopifyStoreUrl: "",
   shopifyAccessToken: "",
   klaviyoApiKey: "",
-  metaAccessToken: "",
-  metaAdAccountId: "",
   reportRecipients: "",
 };
 
@@ -45,7 +41,6 @@ export function ClientForm({
   const [has, setHas] = useState<SavedFlags>({
     shopify: Boolean(initialHas?.shopify),
     klaviyo: Boolean(initialHas?.klaviyo),
-    meta: Boolean(initialHas?.meta),
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -54,19 +49,16 @@ export function ClientForm({
   const update = (key: keyof ClientFormValues) => (event: React.ChangeEvent<HTMLInputElement>) =>
     setValues((current) => ({ ...current, [key]: event.target.value }));
 
-  async function testSource(source: "shopify" | "klaviyo" | "meta") {
+  async function testSource(source: "shopify" | "klaviyo") {
     setTestMessages((current) => ({ ...current, [source]: "Testing…" }));
-    // Prefer testing the form value when typed; otherwise test whatever is already saved.
     const body =
       source === "shopify" && values.shopifyAccessToken.trim()
         ? { source, shopifyStoreUrl: values.shopifyStoreUrl, shopifyAccessToken: values.shopifyAccessToken }
         : source === "klaviyo" && values.klaviyoApiKey.trim()
           ? { source, klaviyoApiKey: values.klaviyoApiKey }
-          : source === "meta" && values.metaAccessToken.trim()
-            ? { source, metaAccessToken: values.metaAccessToken, metaAdAccountId: values.metaAdAccountId }
-            : clientId
-              ? null
-              : { source, ...values };
+          : clientId
+            ? null
+            : { source, ...values };
 
     const response = await fetch(
       body ? "/api/clients/test-connection" : `/api/clients/${clientId}/test-connection`,
@@ -115,12 +107,10 @@ export function ClientForm({
           ? "Saved client details. No new API keys were included (leave key fields blank to keep existing ones)."
           : "Client created.",
     );
-    // Clear secret inputs after a successful save so we never re-POST stale pasted values.
     setValues((current) => ({
       ...current,
       shopifyAccessToken: "",
       klaviyoApiKey: "",
-      metaAccessToken: "",
     }));
 
     if (!clientId && result.id) {
@@ -150,11 +140,11 @@ export function ClientForm({
             required
           />
           <Field
-            label="Meta ad account ID (optional)"
-            id="metaAdAccountId"
-            value={values.metaAdAccountId}
-            onChange={update("metaAdAccountId")}
-            placeholder="act_123456789"
+            label="Report recipients (comma-separated)"
+            id="reportRecipients"
+            value={values.reportRecipients}
+            onChange={update("reportRecipients")}
+            placeholder="team@brand.com, …"
           />
         </CardContent>
       </Card>
@@ -164,7 +154,7 @@ export function ClientForm({
           <CardTitle>Private API credentials</CardTitle>
           <p className="text-sm text-slate-500">
             Paste a new key and click Save to store it encrypted. Blank fields keep the existing saved key. Prefer{" "}
-            <strong>Connect with Shopify</strong> above instead of pasting a Shopify token.
+            <strong>Connect with Shopify</strong> above instead of pasting a Shopify token. Meta Ads is entered manually on each report — no ad account link.
           </p>
         </CardHeader>
         <CardContent className="grid gap-5 sm:grid-cols-2">
@@ -193,24 +183,6 @@ export function ClientForm({
               placeholder={has.klaviyo ? "Saved — paste a new pk_ key only to replace it" : "pk_…"}
             />
             <TestButton source="klaviyo" onClick={testSource} message={testMessages.klaviyo} disabled={!values.klaviyoApiKey.trim() && !has.klaviyo} />
-          </div>
-          <div>
-            <StatusLine label="Meta token" saved={has.meta} />
-            <Field
-              label="Meta system user access token"
-              id="metaAccessToken"
-              value={values.metaAccessToken}
-              onChange={update("metaAccessToken")}
-              type="password"
-              autoComplete="new-password"
-              placeholder={has.meta ? "Saved — paste a new token only to replace it" : undefined}
-            />
-            <TestButton
-              source="meta"
-              onClick={testSource}
-              message={testMessages.meta}
-              disabled={(!values.metaAccessToken.trim() && !has.meta) || !values.metaAdAccountId.trim()}
-            />
           </div>
         </CardContent>
       </Card>
@@ -257,8 +229,8 @@ function TestButton({
   message,
   disabled,
 }: {
-  source: "shopify" | "klaviyo" | "meta";
-  onClick: (source: "shopify" | "klaviyo" | "meta") => void;
+  source: "shopify" | "klaviyo";
+  onClick: (source: "shopify" | "klaviyo") => void;
   message?: string;
   disabled?: boolean;
 }) {

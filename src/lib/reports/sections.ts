@@ -20,7 +20,7 @@ export const REPORT_SECTIONS = [
   {
     id: "paid-media",
     label: "02 · Paid media",
-    description: "Meta Ads from the API plus Google Ads entered manually.",
+    description: "Meta Ads and Google Ads entered manually.",
     requires: null,
   },
   {

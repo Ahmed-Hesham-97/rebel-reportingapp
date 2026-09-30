@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export function ConnectionTest({ clientId, source }: { clientId: string; source: "shopify" | "klaviyo" | "meta" }) {
+export function ConnectionTest({ clientId, source }: { clientId: string; source: "shopify" | "klaviyo" }) {
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   async function test() {

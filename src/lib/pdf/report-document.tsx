@@ -169,10 +169,9 @@ export function ReportDocument({
 }) {
   const shopify = snapshot.shopify.data;
   const klaviyo = snapshot.klaviyo.data;
-  const meta = snapshot.meta.data;
   const manual: ManualReportData = snapshot.manual;
   const funnel = shopify?.funnel ?? null;
-  const currency = shopify?.currency ?? meta?.currency ?? "USD";
+  const currency = shopify?.currency ?? "USD";
   const sections = normalizeSections(snapshot.includedSections);
   const includes = (id: ReportSectionId) => sections.includes(id);
   const periodLabel = snapshot.reportMonth;
@@ -244,28 +243,19 @@ export function ReportDocument({
             </View>
           ) : null}
           <Text style={styles.subheading}>Meta performance</Text>
-          {meta ? (
-            <MetricTable
-              rows={deltaRows([
-                { label: "Ad spend", metric: meta.spend, currency },
-                { label: "Purchases", metric: meta.purchases },
-                { label: "Conversion value", metric: meta.purchaseValue, currency },
-                { label: "ROAS", metric: meta.roas, digits: 2 },
-                { label: "Conversion rate", metric: meta.conversionRate, percent: true },
-              ])}
-            />
-          ) : (
-            <Text style={styles.muted}>Meta Ads not connected for this client. Connect in settings to auto-fill this table.</Text>
-          )}
-          {meta?.topCampaigns?.length ? (
+          <MetricTable
+            rows={manualRows([
+              { label: "Ad spend", current: manual.paid.metaSpend, previous: manual.paid.metaSpendPrev },
+              { label: "Purchases", current: manual.paid.metaPurchases, previous: manual.paid.metaPurchasesPrev },
+              { label: "Conversion value", current: manual.paid.metaConversionValue, previous: manual.paid.metaConversionValuePrev },
+              { label: "ROAS", current: manual.paid.metaRoas, previous: manual.paid.metaRoasPrev },
+              { label: "Conversion rate", current: manual.paid.metaConversionRate, previous: manual.paid.metaConversionRatePrev },
+            ])}
+          />
+          {manual.paid.metaTopCampaigns.trim() ? (
             <>
               <Text style={styles.subheading}>Top Meta campaigns</Text>
-              {meta.topCampaigns.map((campaign) => (
-                <View style={styles.activityRow} key={campaign.id}>
-                  <Text style={styles.activityLabel}>{campaign.name}</Text>
-                  <Text style={styles.activityValue}>{campaign.roas?.toFixed(2) ?? "—"} ROAS</Text>
-                </View>
-              ))}
+              <Text style={styles.body}>{manual.paid.metaTopCampaigns.trim()}</Text>
             </>
           ) : null}
           <Text style={styles.subheading}>Google Ads performance</Text>

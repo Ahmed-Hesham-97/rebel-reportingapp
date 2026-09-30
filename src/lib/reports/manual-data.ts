@@ -50,6 +50,17 @@ const socialSchema = z.preprocess((value) => {
 
 const paidSchema = z.object({
   metaNotes: str(),
+  metaSpend: str(),
+  metaSpendPrev: str(),
+  metaPurchases: str(),
+  metaPurchasesPrev: str(),
+  metaConversionValue: str(),
+  metaConversionValuePrev: str(),
+  metaRoas: str(),
+  metaRoasPrev: str(),
+  metaConversionRate: str(),
+  metaConversionRatePrev: str(),
+  metaTopCampaigns: str(),
   googleSpend: str(),
   googleSpendPrev: str(),
   googlePurchases: str(),
@@ -119,8 +130,8 @@ function section<T extends z.ZodTypeAny>(schema: T) {
 
 /**
  * Fields from the Rebel Marketing Monthly Report template that cannot be
- * pulled from Shopify (or connected Meta / Klaviyo). Edited on the report
- * page and merged into the PDF at download time.
+ * pulled from Shopify / Klaviyo (Meta Ads and Google Ads are entered manually).
+ * Edited on the report page and merged into the PDF at download time.
  */
 export const manualReportDataSchema = z.object({
   social: section(socialSchema),

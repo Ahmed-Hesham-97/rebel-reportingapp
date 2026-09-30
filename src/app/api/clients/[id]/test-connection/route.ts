@@ -4,9 +4,8 @@ import { getApiUser } from "@/lib/authz";
 import { getClient, getClientSecrets } from "@/lib/db";
 import { testShopifyConnection } from "@/lib/integrations/shopify";
 import { testKlaviyoConnection } from "@/lib/integrations/klaviyo";
-import { testMetaConnection } from "@/lib/integrations/meta";
 
-const schema = z.object({ source: z.enum(["shopify", "klaviyo", "meta"]) });
+const schema = z.object({ source: z.enum(["shopify", "klaviyo"]) });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getApiUser();
@@ -23,16 +22,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const result = await testShopifyConnection(client.shopify_store_url, secrets.shopifyToken);
       return NextResponse.json({ ok: true, source: "shopify", result });
     }
-    if (parsed.data.source === "klaviyo") {
-      if (!secrets.klaviyoApiKey) return NextResponse.json({ ok: false, error: "No Klaviyo API key is saved for this client." }, { status: 400 });
-      const result = await testKlaviyoConnection(secrets.klaviyoApiKey);
-      return NextResponse.json({ ok: true, source: "klaviyo", result });
+    if (!secrets.klaviyoApiKey) {
+      return NextResponse.json({ ok: false, error: "No Klaviyo API key is saved for this client." }, { status: 400 });
     }
-    if (!secrets.metaAccessToken || !client.meta_ad_account_id) {
-      return NextResponse.json({ ok: false, error: "No Meta token and ad account are saved for this client." }, { status: 400 });
-    }
-    const result = await testMetaConnection(secrets.metaAccessToken, client.meta_ad_account_id);
-    return NextResponse.json({ ok: true, source: "meta", result });
+    const result = await testKlaviyoConnection(secrets.klaviyoApiKey);
+    return NextResponse.json({ ok: true, source: "klaviyo", result });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Connection failed." }, { status: 502 });
   }
