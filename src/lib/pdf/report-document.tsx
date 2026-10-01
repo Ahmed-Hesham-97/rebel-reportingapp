@@ -122,37 +122,71 @@ const styles = StyleSheet.create({
   },
   activityRow: {
     flexDirection: "row",
+    alignItems: "flex-start",
     paddingVertical: 6,
     borderBottomWidth: 0.5,
     borderBottomColor: line,
+    width: "100%",
   },
   activityLabel: {
-    width: "42%",
+    width: "38%",
     fontFamily: "DMSans",
     fontWeight: 400,
     fontSize: 10,
     color: muted,
+    paddingRight: 10,
   },
   activityValue: {
-    width: "58%",
+    width: "62%",
     fontFamily: "DMSans",
     fontWeight: 400,
     fontSize: 10,
     color: ink,
   },
+  /** Name + value lists (products, campaigns, flows) — fixed right column, no collisions. */
+  listRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 6,
+    borderBottomWidth: 0.5,
+    borderBottomColor: line,
+    width: "100%",
+  },
+  listName: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: ink,
+    paddingRight: 12,
+  },
+  listValue: {
+    width: 88,
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: ink,
+    textAlign: "right",
+  },
   tableHeader: {
     flexDirection: "row",
+    alignItems: "center",
     backgroundColor: wash,
     paddingVertical: 7,
     paddingHorizontal: 8,
     marginTop: 6,
+    width: "100%",
   },
   tableRow: {
     flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 7,
     paddingHorizontal: 8,
     borderBottomWidth: 0.5,
     borderBottomColor: line,
+    width: "100%",
   },
   colMetric: {
     width: "40%",
@@ -160,6 +194,7 @@ const styles = StyleSheet.create({
     fontWeight: 400,
     fontSize: 10,
     color: ink,
+    paddingRight: 8,
   },
   colPrev: {
     width: "20%",
@@ -250,6 +285,15 @@ function ActivityLine({ label, value }: { label: string; value: string }) {
     <View style={styles.activityRow}>
       <Text style={styles.activityLabel}>{label}</Text>
       <Text style={styles.activityValue}>{display(value)}</Text>
+    </View>
+  );
+}
+
+function ListRow({ name, value }: { name: string; value: string }) {
+  return (
+    <View style={styles.listRow}>
+      <Text style={styles.listName}>{name}</Text>
+      <Text style={styles.listValue}>{value}</Text>
     </View>
   );
 }
@@ -481,10 +525,7 @@ export function ReportDocument({
             <>
               <Text style={styles.subheading}>Top products</Text>
               {shopify.topProducts.map((product) => (
-                <View style={styles.activityRow} key={product.id}>
-                  <Text style={styles.activityLabel}>{product.title}</Text>
-                  <Text style={styles.activityValue}>{fmt(product.revenue, { currency })}</Text>
-                </View>
+                <ListRow key={product.id} name={product.title} value={fmt(product.revenue, { currency })} />
               ))}
             </>
           ) : null}
@@ -492,10 +533,11 @@ export function ReportDocument({
             <>
               <Text style={styles.subheading}>Catalog & content updates (from Shopify)</Text>
               {shopify.storeChanges.slice(0, 12).map((change) => (
-                <View style={styles.activityRow} key={change.id}>
-                  <Text style={[styles.activityValue, { width: "78%" }]}>{change.message || `${change.subject} ${change.action}`}</Text>
-                  <Text style={[styles.activityLabel, { width: "22%", textAlign: "right" }]}>{change.occurredAt.slice(0, 10)}</Text>
-                </View>
+                <ListRow
+                  key={change.id}
+                  name={change.message || `${change.subject} ${change.action}`}
+                  value={change.occurredAt.slice(0, 10)}
+                />
               ))}
             </>
           ) : null}
@@ -530,10 +572,7 @@ export function ReportDocument({
             <>
               <Text style={styles.subheading}>Top flows</Text>
               {klaviyo.topFlows.map((flow) => (
-                <View style={styles.activityRow} key={flow.id}>
-                  <Text style={styles.activityLabel}>{flow.name}</Text>
-                  <Text style={styles.activityValue}>{fmt(flow.revenue, { currency: klaviyo.currency })}</Text>
-                </View>
+                <ListRow key={flow.id} name={flow.name} value={fmt(flow.revenue, { currency: klaviyo.currency })} />
               ))}
             </>
           ) : null}
