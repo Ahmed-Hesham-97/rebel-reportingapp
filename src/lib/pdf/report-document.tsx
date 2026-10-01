@@ -120,32 +120,10 @@ const styles = StyleSheet.create({
     color: ink,
     lineHeight: 1.5,
   },
-  activityRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 6,
-    borderBottomWidth: 0.5,
-    borderBottomColor: line,
-    width: "100%",
-  },
-  activityLabel: {
-    width: "38%",
-    fontFamily: "DMSans",
-    fontWeight: 400,
-    fontSize: 10,
-    color: muted,
-    paddingRight: 10,
-  },
-  activityValue: {
-    width: "62%",
-    fontFamily: "DMSans",
-    fontWeight: 400,
-    fontSize: 10,
-    color: ink,
-  },
-  /** Name + value lists (products, campaigns, flows) — fixed right column, no collisions. */
+  /** Label left · value right (space-between) for every two-column single-value row. */
   listRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "flex-start",
     paddingVertical: 6,
     borderBottomWidth: 0.5,
@@ -160,15 +138,17 @@ const styles = StyleSheet.create({
     fontWeight: 400,
     fontSize: 10,
     color: ink,
-    paddingRight: 12,
+    paddingRight: 16,
   },
   listValue: {
-    width: 88,
+    flexGrow: 0,
+    flexShrink: 0,
     fontFamily: "DMSans",
     fontWeight: 400,
     fontSize: 10,
     color: ink,
     textAlign: "right",
+    maxWidth: "55%",
   },
   tableHeader: {
     flexDirection: "row",
@@ -281,12 +261,7 @@ function Footer() {
 }
 
 function ActivityLine({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.activityRow}>
-      <Text style={styles.activityLabel}>{label}</Text>
-      <Text style={styles.activityValue}>{display(value)}</Text>
-    </View>
-  );
+  return <ListRow name={label} value={display(value)} />;
 }
 
 function ListRow({ name, value }: { name: string; value: string }) {
