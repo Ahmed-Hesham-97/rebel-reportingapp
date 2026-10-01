@@ -13,29 +13,202 @@ const ink = "#0f172a";
 const muted = "#64748b";
 const line = "#e2e8f0";
 const wash = "#f8fafc";
+const coverMuted = "#cbd5e1";
 
+/**
+ * One body family (DMSans) everywhere so labels, values, and titles match.
+ * Syne is only for the tiny brand/eyebrow marks. Locked sizes: 9 / 10 / 11 / 14 / 18.
+ */
 const styles = StyleSheet.create({
-  page: { paddingTop: 42, paddingBottom: 52, paddingHorizontal: 42, fontFamily: "DMSans", color: ink, fontSize: 10 },
-  cover: { justifyContent: "center", backgroundColor: ink, color: "#fff", padding: 48 },
-  brandMark: { color: brand, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", marginBottom: 28, fontFamily: "Syne", fontWeight: 700 },
-  coverTitle: { fontSize: 30, fontFamily: "Syne", fontWeight: 800, marginBottom: 8 },
-  coverMeta: { marginTop: 28, fontSize: 11, color: "#cbd5e1", lineHeight: 1.7 },
-  sectionEyebrow: { color: brand, fontSize: 10, letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, fontFamily: "Syne", fontWeight: 700 },
-  heading: { fontSize: 22, fontFamily: "Syne", fontWeight: 700, marginBottom: 14 },
-  subheading: { fontSize: 11, fontFamily: "Syne", fontWeight: 700, marginTop: 14, marginBottom: 8, color: ink },
-  muted: { color: muted, fontSize: 9 },
-  body: { fontSize: 10, lineHeight: 1.5, color: ink },
-  activityRow: { flexDirection: "row", paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: line },
-  activityLabel: { width: "42%", color: muted, fontSize: 9 },
-  activityValue: { width: "58%", fontSize: 9 },
-  tableHeader: { flexDirection: "row", backgroundColor: wash, paddingVertical: 7, paddingHorizontal: 8, marginTop: 6 },
-  tableRow: { flexDirection: "row", paddingVertical: 7, paddingHorizontal: 8, borderBottomWidth: 0.5, borderBottomColor: line },
-  colMetric: { width: "40%", fontSize: 9 },
-  colPrev: { width: "20%", fontSize: 9, textAlign: "right" },
-  colCurrent: { width: "20%", fontSize: 9, textAlign: "right", fontFamily: "DMSans", fontWeight: 700 },
-  colChange: { width: "20%", fontSize: 9, textAlign: "right" },
+  page: {
+    paddingTop: 42,
+    paddingBottom: 52,
+    paddingHorizontal: 42,
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: ink,
+    lineHeight: 1.45,
+  },
+  cover: {
+    justifyContent: "center",
+    backgroundColor: ink,
+    color: "#fff",
+    padding: 48,
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    lineHeight: 1.45,
+  },
+  brandMark: {
+    fontFamily: "Syne",
+    fontWeight: 700,
+    fontSize: 10,
+    color: brand,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginBottom: 20,
+  },
+  coverTitle: {
+    fontFamily: "DMSans",
+    fontWeight: 700,
+    fontSize: 18,
+    color: "#fff",
+    marginBottom: 8,
+  },
+  coverMeta: {
+    marginTop: 24,
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: coverMuted,
+    lineHeight: 1.7,
+  },
+  coverMetaLine: {
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: coverMuted,
+    lineHeight: 1.7,
+  },
+  coverIntro: {
+    position: "absolute",
+    bottom: 48,
+    left: 48,
+    right: 48,
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: coverMuted,
+    lineHeight: 1.5,
+  },
+  sectionEyebrow: {
+    fontFamily: "Syne",
+    fontWeight: 700,
+    fontSize: 10,
+    color: brand,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  heading: {
+    fontFamily: "DMSans",
+    fontWeight: 700,
+    fontSize: 14,
+    color: ink,
+    marginBottom: 14,
+  },
+  subheading: {
+    fontFamily: "DMSans",
+    fontWeight: 700,
+    fontSize: 11,
+    color: ink,
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  muted: {
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: muted,
+    lineHeight: 1.45,
+  },
+  body: {
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: ink,
+    lineHeight: 1.5,
+  },
+  activityRow: {
+    flexDirection: "row",
+    paddingVertical: 6,
+    borderBottomWidth: 0.5,
+    borderBottomColor: line,
+  },
+  activityLabel: {
+    width: "42%",
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: muted,
+  },
+  activityValue: {
+    width: "58%",
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: ink,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    backgroundColor: wash,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    marginTop: 6,
+  },
+  tableRow: {
+    flexDirection: "row",
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: line,
+  },
+  colMetric: {
+    width: "40%",
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: ink,
+  },
+  colPrev: {
+    width: "20%",
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: ink,
+    textAlign: "right",
+  },
+  colCurrent: {
+    width: "20%",
+    fontFamily: "DMSans",
+    fontWeight: 700,
+    fontSize: 10,
+    color: ink,
+    textAlign: "right",
+  },
+  colChange: {
+    width: "20%",
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 10,
+    color: ink,
+    textAlign: "right",
+  },
+  tableHeaderCell: {
+    fontFamily: "DMSans",
+    fontWeight: 700,
+    fontSize: 10,
+    color: ink,
+  },
   noteBox: { marginTop: 10, padding: 12, backgroundColor: wash },
-  footer: { position: "absolute", bottom: 24, left: 42, right: 42, borderTopWidth: 1, borderTopColor: line, paddingTop: 8, fontSize: 8, color: muted, flexDirection: "row", justifyContent: "space-between" },
+  footer: {
+    position: "absolute",
+    bottom: 24,
+    left: 42,
+    right: 42,
+    borderTopWidth: 1,
+    borderTopColor: line,
+    paddingTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  footerText: {
+    fontFamily: "DMSans",
+    fontWeight: 400,
+    fontSize: 9,
+    color: muted,
+  },
   nextMonth: { marginTop: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: line },
 });
 
@@ -66,8 +239,8 @@ function display(value: string | null | undefined) {
 function Footer() {
   return (
     <View style={styles.footer} fixed>
-      <Text />
-      <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+      <Text style={styles.footerText} />
+      <Text style={styles.footerText} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   );
 }
@@ -89,10 +262,10 @@ function MetricTable({
   return (
     <View>
       <View style={styles.tableHeader}>
-        <Text style={[styles.colMetric, { fontFamily: "Syne", fontWeight: 700 }]}>Metric</Text>
-        <Text style={[styles.colPrev, { fontFamily: "Syne", fontWeight: 700 }]}>Prev.</Text>
-        <Text style={[styles.colCurrent, { fontFamily: "Syne", fontWeight: 700 }]}>Current</Text>
-        <Text style={[styles.colChange, { fontFamily: "Syne", fontWeight: 700 }]}>% Change</Text>
+        <Text style={[styles.colMetric, styles.tableHeaderCell]}>Metric</Text>
+        <Text style={[styles.colPrev, styles.tableHeaderCell]}>Prev.</Text>
+        <Text style={[styles.colCurrent, styles.tableHeaderCell]}>Current</Text>
+        <Text style={[styles.colChange, styles.tableHeaderCell]}>% Change</Text>
       </View>
       {rows.map((row) => (
         <View style={styles.tableRow} key={row.label}>
@@ -183,11 +356,11 @@ export function ReportDocument({
         <Text style={styles.brandMark}>Rebel Marketing</Text>
         <Text style={styles.coverTitle}>Monthly Performance Report</Text>
         <View style={styles.coverMeta}>
-          <Text>Client · {clientName}</Text>
-          <Text>Period · {periodLabel}</Text>
-          <Text>Prepared by · Rebel Marketing</Text>
+          <Text style={styles.coverMetaLine}>Client · {clientName}</Text>
+          <Text style={styles.coverMetaLine}>Period · {periodLabel}</Text>
+          <Text style={styles.coverMetaLine}>Prepared by · Rebel Marketing</Text>
         </View>
-        <Text style={{ position: "absolute", bottom: 48, left: 48, right: 48, fontSize: 10, color: "#94a3b8", lineHeight: 1.5 }}>
+        <Text style={styles.coverIntro}>
           Below is a full breakdown of activity and performance across all channels for the reporting period.
         </Text>
       </Page>
