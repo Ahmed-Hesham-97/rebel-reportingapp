@@ -13,20 +13,31 @@ export async function getClient(id: string) {
   return data;
 }
 
+function decryptField(payload: string | null | undefined, label: string) {
+  if (!payload) return { value: null as string | null, error: null as string | null };
+  try {
+    return { value: decryptSecret(payload).trim(), error: null };
+  } catch {
+    return {
+      value: null,
+      error: `Could not decrypt the saved ${label}. ENCRYPTION_KEY does not match the key used when it was saved. Paste it again and Save (or Connect with Shopify again on this same environment).`,
+    };
+  }
+}
+
 /**
  * Shopify arrives via OAuth and Klaviyo is optional. Meta Ads is manual-only.
+ * Each secret is decrypted independently so one bad key does not hide the other.
  */
 export async function getClientSecrets(client: ClientRow) {
-  try {
-    return {
-      shopifyToken: client.shopify_access_token ? decryptSecret(client.shopify_access_token).trim() : null,
-      klaviyoApiKey: client.klaviyo_api_key ? decryptSecret(client.klaviyo_api_key).trim() : null,
-    };
-  } catch {
-    throw new Error(
-      "Could not decrypt saved API keys. ENCRYPTION_KEY may not match the key used when they were saved. Paste the keys again and Save.",
-    );
-  }
+  const shopify = decryptField(client.shopify_access_token, "Shopify access token");
+  const klaviyo = decryptField(client.klaviyo_api_key, "Klaviyo API key");
+  return {
+    shopifyToken: shopify.value,
+    klaviyoApiKey: klaviyo.value,
+    shopifyDecryptError: shopify.error,
+    klaviyoDecryptError: klaviyo.error,
+  };
 }
 
 /**
@@ -37,13 +48,14 @@ export function resolveShopifyAppCredentials(client: ClientRow) {
   const clientId = client.shopify_app_client_id?.trim();
   const encryptedSecret = client.shopify_app_client_secret;
   if (clientId && encryptedSecret) {
-    try {
-      return { clientId, clientSecret: decryptSecret(encryptedSecret).trim() };
-    } catch {
+    const decrypted = decryptField(encryptedSecret, "Shopify app Client secret");
+    if (decrypted.error || !decrypted.value) {
       throw new Error(
-        "Could not decrypt this client's Shopify app secret. ENCRYPTION_KEY may not match the key used when it was saved. Paste the Client secret again and Save, then retry Connect.",
+        decrypted.error ??
+          "Could not decrypt this client's Shopify app secret. Paste the Client secret again and Save, then retry Connect.",
       );
     }
+    return { clientId, clientSecret: decrypted.value };
   }
   return getShopifyAppCredentials();
 }

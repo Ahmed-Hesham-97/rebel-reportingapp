@@ -13,11 +13,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const client = await getClient(id);
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
   const secrets = await getClientSecrets(client);
+  if (secrets.shopifyDecryptError) {
+    return NextResponse.json({ error: secrets.shopifyDecryptError }, { status: 409 });
+  }
   const shopifyToken = secrets.shopifyToken;
   if (!shopifyToken) return NextResponse.json({ error: "Connect the Shopify store first." }, { status: 409 });
   const shop = await testShopifyConnection(client.shopify_store_url, shopifyToken).catch(() => ({ timezone: "UTC" }));
   const period = getPreviousMonthPeriod(new Date(), shop.timezone);
-  const klaviyoKey = secrets.klaviyoApiKey;
+  const klaviyoKey = secrets.klaviyoDecryptError ? null : secrets.klaviyoApiKey;
   const [shopify, klaviyo] = await Promise.allSettled([
     fetchShopifyMetrics(client.shopify_store_url, shopifyToken, period),
     klaviyoKey ? fetchKlaviyoMetrics(klaviyoKey, period) : Promise.resolve(null),

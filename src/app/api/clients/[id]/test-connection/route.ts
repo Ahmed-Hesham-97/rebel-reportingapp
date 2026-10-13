@@ -18,9 +18,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const secrets = await getClientSecrets(client);
     if (parsed.data.source === "shopify") {
-      if (!secrets.shopifyToken) return NextResponse.json({ ok: false, error: "This store is not connected yet." }, { status: 400 });
+      if (secrets.shopifyDecryptError) {
+        return NextResponse.json({ ok: false, error: secrets.shopifyDecryptError }, { status: 400 });
+      }
+      if (!secrets.shopifyToken) {
+        return NextResponse.json({ ok: false, error: "This store is not connected yet." }, { status: 400 });
+      }
       const result = await testShopifyConnection(client.shopify_store_url, secrets.shopifyToken);
       return NextResponse.json({ ok: true, source: "shopify", result });
+    }
+    if (secrets.klaviyoDecryptError) {
+      return NextResponse.json({ ok: false, error: secrets.klaviyoDecryptError }, { status: 400 });
     }
     if (!secrets.klaviyoApiKey) {
       return NextResponse.json({ ok: false, error: "No Klaviyo API key is saved for this client." }, { status: 400 });

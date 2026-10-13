@@ -40,6 +40,7 @@ export async function generateReport(
   const client = await getClient(clientId);
   if (!client) throw new Error("Client not found");
   const secrets = await getClientSecrets(client);
+  if (secrets.shopifyDecryptError) throw new Error(secrets.shopifyDecryptError);
   const shopifyToken = secrets.shopifyToken;
   if (!shopifyToken) throw new Error("Connect the Shopify store before generating a report");
   const sources = configuredSources(client);
