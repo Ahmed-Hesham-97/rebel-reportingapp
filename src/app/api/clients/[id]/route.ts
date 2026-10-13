@@ -28,6 +28,8 @@ const updateSchema = z.object({
   brandLogoUrl: z.string().url().optional().or(z.literal("")),
   shopifyStoreUrl: shopifyStoreUrlSchema,
   shopifyAccessToken: optionalSecret,
+  shopifyAppClientId: z.string().optional(),
+  shopifyAppClientSecret: optionalSecret,
   klaviyoApiKey: optionalSecret,
   reportRecipients: z.array(z.string().email()).default([]),
 });
@@ -52,6 +54,8 @@ export async function PATCH(request: Request, { params }: Context) {
     shopify_store_url: string;
     report_recipients: string[];
     shopify_access_token?: string;
+    shopify_app_client_id?: string | null;
+    shopify_app_client_secret?: string;
     klaviyo_api_key?: string;
   } = {
     name: value.name,
@@ -64,6 +68,15 @@ export async function PATCH(request: Request, { params }: Context) {
     update.shopify_access_token = encryptSecret(value.shopifyAccessToken);
     savedSecrets.push("shopify");
   }
+  if (typeof value.shopifyAppClientId === "string") {
+    const trimmed = value.shopifyAppClientId.trim();
+    update.shopify_app_client_id = trimmed || null;
+    if (trimmed) savedSecrets.push("shopify-app-id");
+  }
+  if (value.shopifyAppClientSecret) {
+    update.shopify_app_client_secret = encryptSecret(value.shopifyAppClientSecret);
+    savedSecrets.push("shopify-app-secret");
+  }
   if (value.klaviyoApiKey) {
     update.klaviyo_api_key = encryptSecret(value.klaviyoApiKey);
     savedSecrets.push("klaviyo");
@@ -73,7 +86,7 @@ export async function PATCH(request: Request, { params }: Context) {
     .from("clients")
     .update(update)
     .eq("id", id)
-    .select("id,shopify_access_token,klaviyo_api_key")
+    .select("id,shopify_access_token,shopify_app_client_id,shopify_app_client_secret,klaviyo_api_key")
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: `Unable to update client: ${error.message}` }, { status: 500 });
@@ -84,6 +97,7 @@ export async function PATCH(request: Request, { params }: Context) {
     savedSecrets,
     has: {
       shopify: Boolean(data.shopify_access_token),
+      shopifyApp: Boolean(data.shopify_app_client_id && data.shopify_app_client_secret),
       klaviyo: Boolean(data.klaviyo_api_key),
     },
   });

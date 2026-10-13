@@ -21,12 +21,14 @@ let cachedEnv: z.infer<typeof envSchema> | undefined;
 export function getEnv() {
   if (!cachedEnv) {
     // Prefer the real deployment URL over a localhost value copied into Vercel.
-    if (process.env.VERCEL) {
-      const configured = process.env.NEXTAUTH_URL ?? "";
-      if (!configured || /localhost|127\.0\.0\.1/i.test(configured)) {
-        const host = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
-        if (host) process.env.NEXTAUTH_URL = host.startsWith("http") ? host : `https://${host}`;
-      }
+    // Locally, prefer localhost over a production URL copied into .env.
+    const configured = process.env.NEXTAUTH_URL ?? "";
+    const isLocalUrl = !configured || /localhost|127\.0\.0\.1/i.test(configured);
+    if (process.env.VERCEL && isLocalUrl) {
+      const host = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+      if (host) process.env.NEXTAUTH_URL = host.startsWith("http") ? host : `https://${host}`;
+    } else if (!process.env.VERCEL && configured && !isLocalUrl) {
+      process.env.NEXTAUTH_URL = `http://localhost:${process.env.PORT || "3000"}`;
     }
     const parsed = envSchema.safeParse(process.env);
     if (!parsed.success) {
@@ -37,10 +39,21 @@ export function getEnv() {
   return cachedEnv;
 }
 
-export function getShopifyAppCredentials() {
+export type ShopifyAppCredentials = { clientId: string; clientSecret: string };
+
+/** Global fallback from env. Prefer per-client credentials via resolveShopifyAppCredentials. */
+export function getShopifyAppCredentials(): ShopifyAppCredentials {
   const { SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET } = getEnv();
   if (!SHOPIFY_CLIENT_ID || !SHOPIFY_CLIENT_SECRET) {
-    throw new Error("Set SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET to connect stores over OAuth.");
+    throw new Error(
+      "Set this client's Shopify app Client ID and secret in settings, or set SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET.",
+    );
   }
+  return { clientId: SHOPIFY_CLIENT_ID, clientSecret: SHOPIFY_CLIENT_SECRET };
+}
+
+export function tryGetShopifyAppCredentials(): ShopifyAppCredentials | null {
+  const { SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET } = getEnv();
+  if (!SHOPIFY_CLIENT_ID || !SHOPIFY_CLIENT_SECRET) return null;
   return { clientId: SHOPIFY_CLIENT_ID, clientSecret: SHOPIFY_CLIENT_SECRET };
 }

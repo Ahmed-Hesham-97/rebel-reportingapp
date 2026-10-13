@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/authz";
-import { getClient } from "@/lib/db";
+import { getClient, hasShopifyAppCredentials, resolveShopifyAppCredentials } from "@/lib/db";
 import { authorizationUrl, createOauthState, isValidShopDomain, toShopDomain } from "@/lib/integrations/shopify-oauth";
 
 export const runtime = "nodejs";
@@ -21,14 +21,25 @@ export async function GET(request: Request) {
   const client = await getClient(clientId);
   if (!client) return NextResponse.json({ error: "Client not found." }, { status: 404 });
 
+  if (!hasShopifyAppCredentials(client)) {
+    return NextResponse.json(
+      {
+        error:
+          "Save this client's Shopify app Client ID and Client secret first (from the Dev Dashboard app for this store).",
+      },
+      { status: 400 },
+    );
+  }
+
   const shop = toShopDomain(url.searchParams.get("shop") ?? client.shopify_store_url);
   if (!isValidShopDomain(shop)) {
     return NextResponse.json({ error: "The store must be a myshopify.com domain." }, { status: 400 });
   }
 
   try {
+    const credentials = resolveShopifyAppCredentials(client);
     const state = createOauthState(clientId);
-    return NextResponse.redirect(authorizationUrl(shop, state));
+    return NextResponse.redirect(authorizationUrl(shop, state, credentials));
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to start the install." }, { status: 500 });
   }

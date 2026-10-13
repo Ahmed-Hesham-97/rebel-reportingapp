@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BarChart3, Building2 } from "lucide-react";
-import { AUTH_DISABLED, requireUser } from "@/lib/authz";
+import { SignOutButton } from "@/components/auth/sign-out-button";
+import { requireUser } from "@/lib/authz";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -30,10 +31,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             <Building2 size={17} /> Add client
           </Link>
         </nav>
-        <div className="hidden border-t border-white/10 p-4 md:block">
-          <p className="truncate px-2 text-xs text-[var(--sidebar-muted)]">
-            {AUTH_DISABLED ? "Auth disabled (temporary)" : user.email}
-          </p>
+        <div className="hidden space-y-2 border-t border-white/10 p-4 md:block">
+          <p className="truncate px-2 text-xs text-[var(--sidebar-muted)]">Team access</p>
+          <SignOutButton />
         </div>
       </aside>
       <main className="min-w-0 flex-1 md:ml-64">{children}</main>

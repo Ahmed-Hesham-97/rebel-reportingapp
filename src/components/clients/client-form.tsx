@@ -11,17 +11,21 @@ type ClientFormValues = {
   name: string;
   brandLogoUrl: string;
   shopifyStoreUrl: string;
+  shopifyAppClientId: string;
+  shopifyAppClientSecret: string;
   shopifyAccessToken: string;
   klaviyoApiKey: string;
   reportRecipients: string;
 };
 
-type SavedFlags = { shopify: boolean; klaviyo: boolean };
+type SavedFlags = { shopify: boolean; shopifyApp: boolean; klaviyo: boolean };
 
 const emptyValues: ClientFormValues = {
   name: "",
   brandLogoUrl: "",
   shopifyStoreUrl: "",
+  shopifyAppClientId: "",
+  shopifyAppClientSecret: "",
   shopifyAccessToken: "",
   klaviyoApiKey: "",
   reportRecipients: "",
@@ -40,6 +44,7 @@ export function ClientForm({
   const [values, setValues] = useState({ ...emptyValues, ...initialValues });
   const [has, setHas] = useState<SavedFlags>({
     shopify: Boolean(initialHas?.shopify),
+    shopifyApp: Boolean(initialHas?.shopifyApp),
     klaviyo: Boolean(initialHas?.klaviyo),
   });
   const [error, setError] = useState("");
@@ -110,7 +115,11 @@ export function ClientForm({
     setValues((current) => ({
       ...current,
       shopifyAccessToken: "",
+      shopifyAppClientSecret: "",
       klaviyoApiKey: "",
+      shopifyAppClientId: result.has?.shopifyApp
+        ? current.shopifyAppClientId || initialValues.shopifyAppClientId || ""
+        : current.shopifyAppClientId,
     }));
 
     if (!clientId && result.id) {
@@ -146,6 +155,50 @@ export function ClientForm({
             onChange={update("reportRecipients")}
             placeholder="team@brand.com, …"
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Shopify Dev Dashboard app</CardTitle>
+          <p className="text-sm text-slate-500">
+            Create one Custom-distribution app per client store in the{" "}
+            <a
+              href="https://dev.shopify.com/dashboard"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-slate-800 underline underline-offset-2"
+            >
+              Shopify Dev Dashboard
+            </a>
+            . Paste that app&apos;s Client ID and Client secret here, then use{" "}
+            <strong>Connect with Shopify</strong> above. Redirect URI must be{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">…/api/shopify/callback</code>.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <StatusLine label="Shopify app credentials" saved={has.shopifyApp} />
+            <Field
+              label="Shopify app Client ID"
+              id="shopifyAppClientId"
+              value={values.shopifyAppClientId}
+              onChange={update("shopifyAppClientId")}
+              autoComplete="off"
+              placeholder={has.shopifyApp ? "Saved — paste a new ID only to replace it" : "From Dev Dashboard → App → Settings"}
+            />
+          </div>
+          <div>
+            <Field
+              label="Shopify app Client secret"
+              id="shopifyAppClientSecret"
+              value={values.shopifyAppClientSecret}
+              onChange={update("shopifyAppClientSecret")}
+              type="password"
+              autoComplete="new-password"
+              placeholder={has.shopifyApp ? "Saved — paste a new secret only to replace it" : "shpss_…"}
+            />
+          </div>
         </CardContent>
       </Card>
 

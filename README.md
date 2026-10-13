@@ -7,11 +7,9 @@ Rebel Reports is an internal reporting workspace for Rebel Marketing. It combine
 1. Install Node.js 22 LTS (the current dependency set does not support Node 23).
 2. Run `npm install`.
 3. Copy `.env.example` to `.env.local` and fill in every server-only value.
-4. Apply the migrations in `supabase/migrations/` in numeric order, from `001_initial_schema.sql` through `008_report_assets_bucket.sql`.
-5. Create an account at `/signup` with a `@rebelmarketingcafe.com` email (or seed one with `npm run create-user -- you@rebelmarketingcafe.com '<password>' admin`).
+4. Apply the migrations in `supabase/migrations/` in numeric order, from `001_initial_schema.sql` through `009_shopify_app_credentials.sql`.
+5. Set the single shared team password with `npm run create-user -- '<password>'`, then sign in at `/login` (password only — no email).
 6. Run `npm run dev`.
-
-Only `@rebelmarketingcafe.com` emails can sign up or sign in.
 
 `SUPABASE_SERVICE_KEY`, `ENCRYPTION_KEY`, `RESEND_API_KEY`, and client credentials must never be exposed as `NEXT_PUBLIC_*` variables or sent to client components.
 
@@ -28,7 +26,7 @@ The app uses NextAuth as the authentication authority. Supabase RLS is enabled a
 
 Only Shopify is required to onboard a client. Klaviyo and Meta can be added later from client settings; until then their report sections are hidden from the picker and skipped during generation rather than counting as failures.
 
-- Shopify: connected over OAuth, not by pasting a token. Shopify no longer allows new admin-created custom apps, so create one app per client store in the [Dev Dashboard](https://shopify.dev/docs/apps/build/authentication-authorization/authenticate-standalone-apps), choose Custom distribution, and set `SHOPIFY_CLIENT_ID` and `SHOPIFY_CLIENT_SECRET`. Requested scopes live in `src/lib/integrations/shopify-oauth.ts`: `read_orders`, `read_customers`, `read_products`, `read_reports` (storefront funnel), and `read_themes` (live theme status). The app's redirect URI must be `<NEXTAUTH_URL>/api/shopify/callback`.
+- Shopify: connected over OAuth, not by pasting a token. Shopify no longer allows new admin-created custom apps, so create **one app per client store** in the [Dev Dashboard](https://dev.shopify.com/dashboard), choose **Custom distribution**, and save that app's Client ID + Client secret on the client settings page (encrypted per client). Optional global fallback: `SHOPIFY_CLIENT_ID` / `SHOPIFY_CLIENT_SECRET` in env for a single shared app. Requested scopes live in `src/lib/integrations/shopify-oauth.ts`: `read_orders`, `read_customers`, `read_products`, `read_reports` (storefront funnel), and `read_themes` (live theme status). The app's redirect URI must be `<NEXTAUTH_URL>/api/shopify/callback`.
 - Klaviyo: a private API key with account, campaign, flow, profile, and reporting scopes as available in the client account.
 - Meta: a system-user token with access to the client ad account and read-insights permission.
 

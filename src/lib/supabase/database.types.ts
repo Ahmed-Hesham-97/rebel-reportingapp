@@ -15,18 +15,21 @@ export type Database = {
       clients: {
         Row: {
           id: string; name: string; brand_logo_url: string | null; shopify_store_url: string;
-          shopify_access_token: string | null; klaviyo_api_key: string | null; meta_access_token: string | null;
+          shopify_access_token: string | null; shopify_app_client_id: string | null;
+          shopify_app_client_secret: string | null; klaviyo_api_key: string | null; meta_access_token: string | null;
           meta_ad_account_id: string | null; report_recipients: string[]; is_active: boolean; created_at: string;
           default_sections: string[];
         };
         Insert: {
           id?: string; name: string; brand_logo_url?: string | null; shopify_store_url: string;
-          shopify_access_token?: string | null; klaviyo_api_key?: string | null; meta_access_token?: string | null;
+          shopify_access_token?: string | null; shopify_app_client_id?: string | null;
+          shopify_app_client_secret?: string | null; klaviyo_api_key?: string | null; meta_access_token?: string | null;
           meta_ad_account_id?: string | null; report_recipients?: string[]; is_active?: boolean; created_at?: string;
           default_sections?: string[];
         };
         Update: Partial<{
           name: string; brand_logo_url: string | null; shopify_store_url: string; shopify_access_token: string | null;
+          shopify_app_client_id: string | null; shopify_app_client_secret: string | null;
           klaviyo_api_key: string | null; meta_access_token: string | null; meta_ad_account_id: string | null;
           report_recipients: string[]; is_active: boolean; default_sections: string[];
         }>; Relationships: [];

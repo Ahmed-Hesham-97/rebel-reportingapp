@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { recordActivity } from "@/lib/audit";
+import { getClient, resolveShopifyAppCredentials } from "@/lib/db";
 import { getEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { encryptSecret } from "@/lib/security/encryption";
@@ -31,12 +32,23 @@ export async function GET(request: Request) {
     return backTo("/dashboard", { error: "shopify_state" });
   }
   const { clientId } = parsed;
-  if (!verifyCallbackHmac(url)) return backTo(`/clients/${clientId}/settings`, { error: "shopify_hmac" });
+
+  const client = await getClient(clientId);
+  if (!client) return backTo("/dashboard", { error: "shopify_state" });
+
+  let credentials;
+  try {
+    credentials = resolveShopifyAppCredentials(client);
+  } catch {
+    return backTo(`/clients/${clientId}/settings`, { error: "shopify_credentials" });
+  }
+
+  if (!verifyCallbackHmac(url, credentials)) return backTo(`/clients/${clientId}/settings`, { error: "shopify_hmac" });
   if (!isValidShopDomain(shop)) return backTo(`/clients/${clientId}/settings`, { error: "shopify_shop" });
   if (!code) return backTo(`/clients/${clientId}/settings`, { error: "shopify_code" });
 
   try {
-    const { accessToken, missing } = await exchangeCodeForToken(shop, code);
+    const { accessToken, missing } = await exchangeCodeForToken(shop, code, credentials);
     // Prove the token works before we claim the store is connected.
     await testShopifyConnection(`https://${shop}`, accessToken);
 

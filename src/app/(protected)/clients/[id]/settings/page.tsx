@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireAdmin } from "@/lib/authz";
-import { getClient } from "@/lib/db";
+import { getClient, hasShopifyAppCredentials } from "@/lib/db";
 import { ClientForm } from "@/components/clients/client-form";
 import { ConnectionTest } from "@/components/clients/connection-test";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const FLASH: Record<string, { tone: "ok" | "warn" | "err"; text: string }> = {
   shopify: { tone: "ok", text: "Shopify connected. You can generate reports for this store now." },
-  shopify_hmac: { tone: "err", text: "Shopify rejected the callback signature. Check SHOPIFY_CLIENT_SECRET on Vercel." },
+  shopify_hmac: {
+    tone: "err",
+    text: "Shopify rejected the callback signature. Confirm this client's Shopify app Client secret matches the Dev Dashboard app.",
+  },
   shopify_shop: { tone: "err", text: "Shopify returned an invalid shop domain." },
   shopify_code: { tone: "err", text: "Shopify did not return an authorization code. Try connecting again." },
+  shopify_credentials: {
+    tone: "err",
+    text: "Shopify app credentials are missing for this client. Save the Client ID and Client secret from the Dev Dashboard, then try Connect again.",
+  },
   shopify_exchange: {
     tone: "err",
-    text: "Shopify connect failed (token exchange or save). Confirm SHOPIFY_CLIENT_ID / SHOPIFY_CLIENT_SECRET on Vercel match the Shopify app, then try Connect again.",
+    text: "Shopify connect failed (token exchange or save). Confirm this client's Shopify app Client ID / secret match the Dev Dashboard app, then try Connect again.",
   },
   shopify_state: { tone: "err", text: "The Shopify connection expired. Click Connect with Shopify again." },
 };
@@ -33,6 +40,7 @@ export default async function ClientSettingsPage({
   const client = await getClient(id);
   if (!client) notFound();
 
+  const canConnect = hasShopifyAppCredentials(client);
   const errorKey = typeof query.error === "string" ? query.error : undefined;
   const connectedKey = typeof query.connected === "string" ? query.connected : undefined;
   const warning = typeof query.warning === "string" ? query.warning : undefined;
@@ -64,17 +72,26 @@ export default async function ClientSettingsPage({
           <CardHeader>
             <CardTitle>Connect the Shopify store</CardTitle>
             <p className="text-sm text-slate-500">
-              Installing the app in Shopify alone is not enough — click below to approve scopes and store a fresh Admin API token. Use this instead of pasting a token by hand.
+              1) Create a Custom-distribution app for this store in the Shopify Dev Dashboard. 2) Save that app&apos;s Client ID
+              and Client secret below. 3) Click Connect to approve scopes and store a fresh Admin API token.
             </p>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
-            <Button asChild>
-              <a href={`/api/shopify/install?clientId=${client.id}`}>Connect with Shopify</a>
-            </Button>
+            {canConnect ? (
+              <Button asChild>
+                <a href={`/api/shopify/install?clientId=${client.id}`}>Connect with Shopify</a>
+              </Button>
+            ) : (
+              <Button type="button" disabled>
+                Connect with Shopify
+              </Button>
+            )}
             {client.shopify_access_token ? (
               <span className="text-xs text-slate-500">A token is saved — reconnect if reports fail with auth errors.</span>
+            ) : canConnect ? (
+              <span className="text-xs font-medium text-amber-700">App credentials saved — not connected yet.</span>
             ) : (
-              <span className="text-xs font-medium text-amber-700">Not connected yet.</span>
+              <span className="text-xs font-medium text-amber-700">Save Shopify app Client ID + secret below first.</span>
             )}
           </CardContent>
         </Card>
@@ -84,10 +101,12 @@ export default async function ClientSettingsPage({
             name: client.name,
             brandLogoUrl: client.brand_logo_url ?? "",
             shopifyStoreUrl: client.shopify_store_url,
+            shopifyAppClientId: client.shopify_app_client_id ?? "",
             reportRecipients: client.report_recipients.join(", "),
           }}
           initialHas={{
             shopify: Boolean(client.shopify_access_token),
+            shopifyApp: Boolean(client.shopify_app_client_id && client.shopify_app_client_secret),
             klaviyo: Boolean(client.klaviyo_api_key),
           }}
         />

@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-import { getEnv, getShopifyAppCredentials } from "@/lib/env";
+import { getEnv, type ShopifyAppCredentials } from "@/lib/env";
 
 /**
  * Scopes the report needs. read_customers powers new/returning counts,
@@ -94,10 +94,9 @@ export function parseOauthState(state: string | null): OauthStatePayload | null 
   }
 }
 
-export function authorizationUrl(shop: string, state: string) {
-  const { clientId } = getShopifyAppCredentials();
+export function authorizationUrl(shop: string, state: string, credentials: ShopifyAppCredentials) {
   const params = new URLSearchParams({
-    client_id: clientId,
+    client_id: credentials.clientId,
     scope: SHOPIFY_SCOPES.join(","),
     redirect_uri: redirectUri(),
     state,
@@ -109,8 +108,7 @@ export function authorizationUrl(shop: string, state: string) {
  * Verifies the callback signature: drop `hmac`, sort the remaining query
  * parameters, and compare a SHA-256 digest in constant time.
  */
-export function verifyCallbackHmac(url: URL) {
-  const { clientSecret } = getShopifyAppCredentials();
+export function verifyCallbackHmac(url: URL, credentials: ShopifyAppCredentials) {
   const provided = url.searchParams.get("hmac");
   if (!provided) return false;
   const message = [...url.searchParams.entries()]
@@ -119,7 +117,7 @@ export function verifyCallbackHmac(url: URL) {
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([key, value]) => `${key}=${value}`)
     .join("&");
-  const digest = Buffer.from(createHmac("sha256", clientSecret).update(message).digest("hex"));
+  const digest = Buffer.from(createHmac("sha256", credentials.clientSecret).update(message).digest("hex"));
   const expected = Buffer.from(provided);
   return digest.length === expected.length && timingSafeEqual(digest, expected);
 }
@@ -131,12 +129,15 @@ type TokenResponse = { access_token: string; scope: string };
  * apps are exempt from the 2027 expiring-token requirement, so no refresh
  * bookkeeping is needed for agency-installed apps.
  */
-export async function exchangeCodeForToken(shop: string, code: string) {
-  const { clientId, clientSecret } = getShopifyAppCredentials();
+export async function exchangeCodeForToken(shop: string, code: string, credentials: ShopifyAppCredentials) {
   const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, code }),
+    body: new URLSearchParams({
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
+      code,
+    }),
   });
   if (!response.ok) throw new Error("Shopify rejected the authorization code.");
   const { access_token, scope } = (await response.json()) as TokenResponse;

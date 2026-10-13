@@ -6,11 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Password-only app login (no email): sign in at `/login` with the shared access password; seed/reset via `npm run create-user`.
+- Per-client Shopify Dev Dashboard app credentials (Client ID + encrypted Client secret) so each store can use its own Custom-distribution app; OAuth falls back to global `SHOPIFY_CLIENT_*` env vars when unset.
 - Manual report fields on the review page for everything in the Rebel monthly template that APIs cannot supply (social organic, Google Ads, website notes, influencer/UGC, content, Google Business, summary). Saved to `report_snapshots.manual_data` and merged into the PDF.
 - PDF sections aligned to the Rebel Marketing Monthly Report template: Social, Paid Media, Website, Email & SMS, Influencer & UGC, Content Creation, Google Business, Summary.
 - Shopify new/returning customer counts and refund rate from order + customer data.
 - Meta Ads conversion rate (purchases ÷ clicks) for the Paid Media table.
-- Email/password signup at `/signup` restricted to `@rebelmarketingcafe.com` addresses; first successful signup creates the app user.
 - Next.js App Router foundation with strict TypeScript, Tailwind CSS, and accessible UI primitives.
 - NextAuth credentials login with role-aware internal access.
 - Supabase migrations, RLS, encrypted client credentials, client CRUD, and audit logging.

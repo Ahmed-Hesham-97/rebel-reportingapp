@@ -4,16 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 
 const scrypt = promisify(scryptCallback);
 
-const COMPANY_EMAIL_DOMAIN = "rebelmarketingcafe.com";
-const [email, password, role = "admin"] = process.argv.slice(2);
+const ACCESS_HANDLE = "access";
+const [password] = process.argv.slice(2);
+const role = "admin";
 
-if (!email || !password) {
-  console.error('Usage: node --env-file=.env scripts/create-user.mjs <email> <password> [admin|viewer]');
-  process.exit(1);
-}
-
-if (!email.toLowerCase().endsWith(`@${COMPANY_EMAIL_DOMAIN}`)) {
-  console.error(`Email must be @${COMPANY_EMAIL_DOMAIN}`);
+if (!password) {
+  console.error("Usage: node --env-file=.env scripts/create-user.mjs <password>");
+  console.error("Sets the single shared team password for the whole app.");
   process.exit(1);
 }
 
@@ -40,7 +37,7 @@ const supabase = createClient(url, key, {
 
 const { data, error } = await supabase
   .from("users")
-  .upsert({ email: email.toLowerCase(), hashed_password, role }, { onConflict: "email" })
+  .upsert({ email: ACCESS_HANDLE, hashed_password, role }, { onConflict: "email" })
   .select("id,email,role")
   .single();
 
@@ -49,4 +46,4 @@ if (error) {
   process.exit(1);
 }
 
-console.log(`Created ${data.role} user ${data.email}`);
+console.log("Saved the shared team password. Everyone signs in at /login with that password only.");
