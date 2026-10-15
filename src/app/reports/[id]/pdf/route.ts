@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const { data: row, error } = await supabaseAdmin()
     .from("report_snapshots")
-    .select("id,client_id,report_month,shopify_data,klaviyo_data,meta_data,manual_data,pdf_url,status,error_log,created_at,included_sections,delivered_at")
+    .select("id,client_id,report_month,period_end,shopify_data,klaviyo_data,meta_data,manual_data,pdf_url,status,error_log,created_at,included_sections,delivered_at")
     .eq("id", id)
     .maybeSingle();
   if (error) return NextResponse.json({ error: "Unable to load report." }, { status: 500 });

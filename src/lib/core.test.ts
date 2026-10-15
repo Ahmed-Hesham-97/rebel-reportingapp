@@ -32,6 +32,12 @@ describe("report periods", () => {
     expect(period.previous.start).toContain("2026-01");
   });
 
+  it("formats cover periods as inclusive from–to dates", async () => {
+    const { formatReportPeriodRange } = await import("@/lib/reports/date-range");
+    expect(formatReportPeriodRange("2026-09-01", "2026-10-01")).toBe("2026-09-01 to 2026-09-30");
+    expect(formatReportPeriodRange("2026-09-01")).toBe("2026-09-01 to 2026-09-30");
+  });
+
   it("builds quarter-length comparison windows", async () => {
     const { getReportRangePeriod } = await import("@/lib/reports/date-range");
     const period = getReportRangePeriod("2026-04-01", "2026-07-01", "UTC");

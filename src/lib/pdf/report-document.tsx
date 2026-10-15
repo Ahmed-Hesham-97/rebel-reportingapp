@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { registerReportFonts } from "@/lib/pdf/fonts";
+import { formatReportPeriodRange } from "@/lib/reports/date-range";
 import { normalizeSections, type ReportSectionId } from "@/lib/reports/sections";
 import { asPercentPoints } from "@/lib/utils";
 import type { DeltaMetric, ManualReportData, ReportSnapshot } from "@/types/report";
@@ -366,7 +367,7 @@ export function ReportDocument({
   const currency = shopify?.currency ?? "USD";
   const sections = normalizeSections(snapshot.includedSections);
   const includes = (id: ReportSectionId) => sections.includes(id);
-  const periodLabel = snapshot.reportMonth;
+  const periodLabel = formatReportPeriodRange(snapshot.reportMonth, snapshot.period.periodEnd);
 
   return (
     <Document title={`${clientName} monthly report`} author="Rebel Marketing">

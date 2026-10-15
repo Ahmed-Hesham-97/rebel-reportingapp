@@ -61,11 +61,36 @@ export function getPreviousMonthPeriod(now = new Date(), timezone = "UTC"): Repo
   return getReportMonthPeriod(`${previousMonth.getUTCFullYear()}-${String(previousMonth.getUTCMonth() + 1).padStart(2, "0")}-01`, timezone);
 }
 
-/** Human label for a stored snapshot window. */
+/** Inclusive last calendar day for a half-open [start, exclusiveEnd) window. */
+function inclusiveEndDay(startDay: string, exclusiveEndDay?: string | null) {
+  const start = parseDay(startDay);
+  const exclusiveEnd = exclusiveEndDay
+    ? parseDay(exclusiveEndDay)
+    : { ...addMonths(start.year, start.monthIndex, 1), day: 1 };
+  const last = new Date(Date.UTC(exclusiveEnd.year, exclusiveEnd.monthIndex, exclusiveEnd.day || 1));
+  last.setUTCDate(last.getUTCDate() - 1);
+  return {
+    year: last.getUTCFullYear(),
+    monthIndex: last.getUTCMonth(),
+    day: last.getUTCDate(),
+  };
+}
+
+function formatIsoDay(year: number, monthIndex: number, day: number) {
+  return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/** Cover/PDF label: always an inclusive from–to date range. */
+export function formatReportPeriodRange(startDay: string, endDay?: string | null) {
+  const start = parseDay(startDay);
+  const last = inclusiveEndDay(startDay, endDay);
+  return `${formatIsoDay(start.year, start.monthIndex, start.day)} to ${formatIsoDay(last.year, last.monthIndex, last.day)}`;
+}
+
+/** Human label for a stored snapshot window (UI lists). */
 export function formatReportPeriodLabel(startDay: string, endDay?: string | null) {
   const start = parseDay(startDay);
-  const exclusiveEnd = endDay ? parseDay(endDay) : addMonths(start.year, start.monthIndex, 1);
-  const last = addMonths(exclusiveEnd.year, exclusiveEnd.monthIndex, -1);
+  const last = inclusiveEndDay(startDay, endDay);
   const startLabel = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" }).format(
     new Date(Date.UTC(start.year, start.monthIndex, 1)),
   );
